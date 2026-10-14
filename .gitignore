@@ -1,0 +1,15 @@
+.venv/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+.vscode/
+*.db
+*.sqlite
+*.sqlite3
+data/raw/
+node_modules/
+*.log
