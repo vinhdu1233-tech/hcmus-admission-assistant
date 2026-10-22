@@ -1,0 +1,13 @@
+{
+  "name": "hcmus-guide-node-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "HCMUS Admission Assistant — editorial blue UI with a fullscreen chat and a zero-dependency Node.js server",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs",
+    "check": "node --check server.mjs && node --check app.js"
+  },
+  "engines": {"node": ">=18"}
+}
