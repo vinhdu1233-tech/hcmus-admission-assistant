@@ -1,0 +1,1 @@
+"""HCMUS assistant backend package."""
