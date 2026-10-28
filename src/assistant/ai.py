@@ -1,7 +1,8 @@
-"""Optional OpenAI explanations over retrieved, source-identified HCMUS programs.
+"""Optional AI explanation of HCMUS major recommendations after SQLite retrieval.
 
-No key or failed provider -> return None and use deterministic retrieval fallback.
-Never return model-generated program names/codes/URLs as authoritative records.
+Use AI_PROVIDER=gemini for Google's Free Tier or AI_PROVIDER=openai for OpenAI.
+Every program code must already exist in retrieved SQLite candidates.
+No API key/network/provider failure => safe, deterministic retrieval fallback.
 """
 from __future__ import annotations
 
@@ -26,14 +27,92 @@ Nếu dữ liệu không đủ, trả recommendations rỗng.
 """
 
 
-def explain_with_ai(question: str, candidates: list[dict]) -> dict[str, str] | None:
-    """Return validated code->reason only. Caller renders names and citations."""
-    key = os.getenv("OPENAI_API_KEY", "").strip()
-    if not key or not candidates:
+def _evidence(candidates: list[dict]) -> list[dict]:
+    """Only trusted SQLite fields and clearly identified editorial tags."""
+    return [{
+        "code": row["code"],
+        "official_program_name": row["name"],
+        "official_quota": row.get("quota"),
+        "official_admission_combinations": row.get("combinations"),
+        "editorial_tags_not_official": row["tags"],
+    } for row in candidates]
+
+
+def _validate(payload: dict, candidates: list[dict]) -> dict[str, str] | None:
+    """Reject any unknown major code, malformed output or overly long reason."""
+    if not isinstance(payload, dict):
+        return None
+    suggestions = payload.get("recommendations")
+    if not isinstance(suggestions, list) or len(suggestions) > 3:
+        return None
+    allowed = {row["code"] for row in candidates}
+    accepted: dict[str, str] = {}
+    for item in suggestions:
+        if not isinstance(item, dict):
+            return None
+        code, reason = item.get("code"), item.get("reason")
+        if code not in allowed or not isinstance(reason, str):
+            return None
+        reason = reason.strip()
+        if not 8 <= len(reason) <= 300:
+            return None
+        if code in accepted:
+            return None
+        accepted[code] = reason
+    return accepted or None
+
+
+def _explain_gemini(question: str, candidates: list[dict]) -> dict[str, str] | None:
+    key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not key:
+        return None
+    try:
+        from google import genai
+        from google.genai import types
+        from pydantic import BaseModel
+
+        class ProgramReason(BaseModel):
+            code: str
+            reason: str
+
+        class RecommendationOutput(BaseModel):
+            recommendations: list[ProgramReason]
+
+        client = genai.Client(
+            api_key=key,
+            http_options=types.HttpOptions(timeout=15000),
+        )
+        try:
+            result = client.models.generate_content(
+                model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
+                contents=json.dumps({
+                    "student_question": question,
+                    "candidates": _evidence(candidates),
+                }, ensure_ascii=False),
+                config=types.GenerateContentConfig(
+                    system_instruction=INSTRUCTIONS,
+                    response_mime_type="application/json",
+                    response_schema=RecommendationOutput,
+                    temperature=0.2,
+                    max_output_tokens=500,
+                ),
+            )
+            if not result.text:
+                return None
+            return _validate(json.loads(result.text), candidates)
+        finally:
+            client.close()
+    except Exception:
+        # No key, quota exceeded, blocked request or bad model => retrieval fallback.
+        # Never expose the key or provider request details to end users.
         return None
 
+
+def _explain_openai(question: str, candidates: list[dict]) -> dict[str, str] | None:
+    key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not key:
+        return None
     codes = [row["code"] for row in candidates]
-    allowed = set(codes)
     schema = {
         "type": "object",
         "properties": {
@@ -54,44 +133,40 @@ def explain_with_ai(question: str, candidates: list[dict]) -> dict[str, str] | N
         "required": ["recommendations"],
         "additionalProperties": False,
     }
-    # Official: name, code, quota, combinations, URL.
-    # Editorial: tags; clearly marked as non-official in the prompt.
-    evidence = [{
-        "code": row["code"],
-        "official_program_name": row["name"],
-        "official_quota": row.get("quota"),
-        "official_admission_combinations": row.get("combinations"),
-        "editorial_tags_not_official": row["tags"],
-    } for row in candidates]
-
     try:
         from openai import OpenAI
         client = OpenAI(api_key=key, timeout=8.0, max_retries=0)
         result = client.responses.create(
             model=os.getenv("OPENAI_MODEL", "gpt-6-luna"),
             instructions=INSTRUCTIONS,
-            input=json.dumps({"student_question": question, "candidates": evidence}, ensure_ascii=False),
-            text={"format": {"type": "json_schema", "name": "major_suggestions", "strict": True, "schema": schema}},
+            input=json.dumps({
+                "student_question": question,
+                "candidates": _evidence(candidates),
+            }, ensure_ascii=False),
+            text={
+                "format": {
+                    "type": "json_schema",
+                    "name": "major_suggestions",
+                    "strict": True,
+                    "schema": schema,
+                }
+            },
             max_output_tokens=650,
             store=False,
         )
-        content = result.output_text
-        payload = json.loads(content)
-        suggestions = payload.get("recommendations")
-        if not isinstance(suggestions, list):
-            return None
-        accepted = {}
-        for item in suggestions:
-            if not isinstance(item, dict):
-                return None
-            code = item.get("code")
-            reason = item.get("reason")
-            if code not in allowed or not isinstance(reason, str) or not 8 <= len(reason.strip()) <= 300:
-                return None
-            if code not in accepted:
-                accepted[code] = reason.strip()
-        return accepted or None
+        return _validate(json.loads(result.output_text), candidates)
     except Exception:
-        # Network/auth/schema/model errors must not stop local retrieval.
-        # Do not leak provider credentials/errors to the frontend.
         return None
+
+
+def explain_with_ai(question: str, candidates: list[dict]) -> dict[str, str] | None:
+    """Return validated code->reason; server renders the official source records."""
+    if not candidates:
+        return None
+    provider = os.getenv("AI_PROVIDER", "openai").strip().lower()
+    if provider == "gemini":
+        return _explain_gemini(question, candidates)
+    if provider == "openai":
+        return _explain_openai(question, candidates)
+    # Explicitly disable external AI with AI_PROVIDER=none.
+    return None
