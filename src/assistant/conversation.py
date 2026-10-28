@@ -99,7 +99,7 @@ class ConversationManager:
         original = message
         effective_year = year
 
-        if year_reply is not None and previous.question and year is None:
+        if year_reply is not None and previous.question and (year is None or year == year_reply):
             # 'Ngành nào A01?' -> '2026'    (pending)
             # 'Ngành nào A01 năm 2026?' -> 'còn năm 2027?' (reuse last topic)
             original = previous.question
