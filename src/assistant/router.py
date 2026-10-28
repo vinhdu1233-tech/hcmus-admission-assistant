@@ -133,6 +133,7 @@ def route(message:str,year:int|None,*,focus_query:str|None=None,
         # Internal-only dialogue metadata; the public ChatResponse schema drops it.
         # Avoid reconstructing recommendations when the LLM changes selection.
         result["_recommended_codes"]=tuple(r["code"] for r in chosen)
+        result["_recommended_names"]=tuple(r["name"] for r in chosen)
         result["_followup_prompt"]=followup
         return result
     if intent in ('major_filter','admission_lookup'):
