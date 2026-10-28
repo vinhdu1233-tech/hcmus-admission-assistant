@@ -61,7 +61,8 @@ def extract_year(message:str,request_year:int|None)->tuple[int|None,str|None]:
         return None,'Năm trong câu hỏi khác với năm được chọn. Bạn muốn tra cứu năm nào?'
     return request_year if request_year is not None else embedded, None
 
-def route(message:str,year:int|None,*,focus_query:str|None=None)->dict:
+def route(message:str,year:int|None,*,focus_query:str|None=None,
+          candidates_override:list[dict]|None=None)->dict:
     intent=detect_intent(message)
     y,error=extract_year(message,year)
     if error:return response(error,intent,'clarification_needed')
@@ -84,7 +85,8 @@ def route(message:str,year:int|None,*,focus_query:str|None=None)->dict:
         text='Các phương thức xét tuyển HCMUS 2026 (tóm tắt):\n'+'\n'.join(f"• {r['code']}: {r['summary']}" for r in methods)
         return response(text+'\nĐọc thông báo chi tiết để kiểm tra điều kiện từng phương thức.',intent,sources=[{'title':'Thông báo phương thức '+r['code']+' – HCMUS','url':r['source_url'],'admission_year':y} for r in methods])
     if intent=='major_exploration':
-        candidates=retrieve_majors(focus_query or message,y,limit=5)
+        candidates=(candidates_override if candidates_override is not None else
+                    retrieve_majors(focus_query or message,y,limit=5))
         if not candidates:
             return response(
                 'Bạn đang quan tâm môn học hoặc hoạt động nào (ví dụ: lập trình, dữ liệu, vật lý, sinh học)? '
@@ -125,9 +127,14 @@ def route(message:str,year:int|None,*,focus_query:str|None=None)->dict:
         notice=('Đây là gợi ý tham khảo, không phải đánh giá năng lực hay kết luận trúng tuyển. '
                 'Chỉ những ngành có liên kết giới thiệu riêng mới có mô tả chương trình đã đối chiếu; '
                 'các ngành khác dùng tên ngành và từ khóa do nhóm biên soạn.')
-        return response(
+        result=response(
             intro+'\n'+lines+'\n'+followup+'\n'+notice+'\n'+coverage_note(y),
             intent,sources=sources)
+        # Internal-only dialogue metadata; the public ChatResponse schema drops it.
+        # Avoid reconstructing recommendations when the LLM changes selection.
+        result["_recommended_codes"]=tuple(r["code"] for r in chosen)
+        result["_followup_prompt"]=followup
+        return result
     if intent in ('major_filter','admission_lookup'):
         found=[c for c in COMBINATIONS if re.search(r'(?<![A-Z0-9])'+c+r'(?![A-Z0-9])',message.upper())]
         if len(found)>1:return response('Bạn muốn tìm theo tổ hợp nào? Vui lòng nhập một mã tổ hợp (ví dụ A01).',intent,'clarification_needed')
