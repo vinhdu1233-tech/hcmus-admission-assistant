@@ -115,3 +115,28 @@ def test_no_context_does_not_interpret_short_choice_as_followup():
     with TestClient(app) as client:
         reply = chat(client, str(uuid4()), "giải thuật toán")
     assert reply["status"] == "clarification_needed"
+
+
+@pytest.mark.parametrize("short_reply,expected_word", [
+    ("sinh học", "Sinh học"),
+    ("thiết kế vi mạch", "Thiết kế vi mạch"),
+])
+def test_free_form_grounded_followup_after_ai_question(short_reply, expected_word):
+    session = str(uuid4())
+    with TestClient(app) as client:
+        chat(client, session, "Em thích lập trình và toán, nên chọn ngành nào năm 2026?")
+        result = chat(client, session, short_reply)
+    assert result["intent"] == "major_exploration"
+    assert result["status"] == "answered"
+    assert "hướng bạn vừa chọn" in result["answer"]
+    assert expected_word in result["answer"]
+    assert result["sources"]
+
+
+def test_unrelated_free_text_does_not_invent_program_evidence():
+    session = str(uuid4())
+    with TestClient(app) as client:
+        chat(client, session, "Em thích lập trình và toán, nên chọn ngành nào năm 2026?")
+        result = chat(client, session, "mình thích vẽ tranh và chơi đàn")
+    assert result["status"] == "clarification_needed"
+    assert result["sources"] == []
