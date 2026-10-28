@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from src.api.main import app
 from src.assistant.retrieval import retrieve_majors
-from src.database.db import connect, initialize_database, all_majors
+from src.database.db import connect, initialize_database, all_majors, official_hcmus_url
 from scripts.discover_program_profiles import build_review, score_match, parse_catalog
 
 
@@ -21,17 +21,22 @@ def test_verified_profiles_are_joined_to_2026_majors():
     rows = all_majors(2026)
     assert len(rows) == 39
     verified = [r for r in rows if r.get("official_profile")]
-    assert len(verified) >= 5
-    assert all(r["profile_source_url"].startswith(
-        "https://tuyensinh.hcmus.edu.vn/") for r in verified)
+    assert len(verified) == 39
+    assert len({r["code"] for r in verified}) == 39
+    assert all(official_hcmus_url(r["profile_source_url"]) for r in verified)
+    assert all(r["profile_reviewed_on"] for r in verified)
 
 
-def test_unknown_ai_program_code_not_silently_bound_to_profile():
+def test_ai_profile_is_sourced_to_general_overview_not_code_mismatched_page():
     with connect() as db:
         row = db.execute(
             "SELECT * FROM program_profiles WHERE year=2026 AND major_code='7480107'"
         ).fetchone()
-    assert row is None  # Program page prints a different program code.
+    assert row is not None
+    assert row["source_url"] == "https://tuyensinh.hcmus.edu.vn/nganh-moi/"
+    # 7480207 appears only on another school profile page; the 2026
+    # admissions code remains 7480107. Do not silently rewrite it.
+    assert row["major_code"] == "7480107"
 
 
 def test_lexical_retrieval_includes_provenance():
@@ -92,3 +97,17 @@ def test_candidate_review_does_not_auto_approve():
     assert result[0]["review_status"] == "needs_manual_review"
     assert "7480207" in result[0]["warning"]
     assert score_match("Trí tuệ nhân tạo", "Ngành Trí tuệ nhân tạo") > 0.5
+
+
+def test_url_validator_allows_official_faculty_and_rejects_impostors():
+    assert official_hcmus_url("https://phys.hcmus.edu.vn/vi/nganh-hoc/example")
+    assert official_hcmus_url("https://math.hcmus.edu.vn/path")
+    assert official_hcmus_url("https://www.math.hcmus.edu.vn/path")
+    for url in (
+        "https://tuyensinh.hcmus.edu.vn.evil.example/path",
+        "http://math.hcmus.edu.vn/path",
+        "https://hcmus.edu.vn@evil.example/path",
+        "https://fake-hcmus.edu.vn/path",
+        "javascript:alert(1)",
+    ):
+        assert not official_hcmus_url(url)
