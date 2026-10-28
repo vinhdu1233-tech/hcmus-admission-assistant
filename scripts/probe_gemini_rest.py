@@ -49,8 +49,7 @@ try:
         text = "".join(
             part.get("text", "")
             for candidate in result.get("candidates", [])
-            for item in candidate.get("content", {}).get("parts", [])
-            if (part := item)
+            for part in candidate.get("content", {}).get("parts", [])
         )
         print("HTTP STATUS:", response.status)
         print("RESPONSE:", text.strip()[:160] or "(response contains no text)")
