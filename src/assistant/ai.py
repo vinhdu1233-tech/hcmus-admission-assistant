@@ -11,6 +11,16 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
+from pydantic import BaseModel
+
+
+class ProgramReason(BaseModel):
+    code: str
+    reason: str
+
+
+class RecommendationOutput(BaseModel):
+    recommendations: list[ProgramReason]
 
 load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
 
@@ -69,18 +79,9 @@ def _explain_gemini(question: str, candidates: list[dict]) -> dict[str, str] | N
     try:
         from google import genai
         from google.genai import types
-        from pydantic import BaseModel
-
-        class ProgramReason(BaseModel):
-            code: str
-            reason: str
-
-        class RecommendationOutput(BaseModel):
-            recommendations: list[ProgramReason]
-
         client = genai.Client(
             api_key=key,
-            http_options=types.HttpOptions(timeout=15000),
+            http_options=types.HttpOptions(timeout=18000),
         )
         try:
             result = client.models.generate_content(
