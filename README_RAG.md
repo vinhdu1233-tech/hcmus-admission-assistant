@@ -124,3 +124,14 @@ Browser (Node :5501)
 ```
 
 Reference: https://developers.openai.com/api/docs/guides/text and https://developers.openai.com/api/docs/guides/structured-outputs
+
+
+## M6: Natural language, HCMUS program profiles and 3-feature test plan
+
+See [README_MVP_3_TASKS.md](README_MVP_3_TASKS.md) for the step-by-step Mac workflow.
+
+- The SQLite admissions dataset has 39/39 codes, **not** 39 official programme descriptions.
+- `data/curated/program_profiles_2026.json` currently has 5 manually reviewed profile summaries with official HCMUS URLs. The `program_profiles` table is populated by `python -m src.database.db`.
+- `scripts/discover_program_profiles.py` generates a review queue of candidate official pages. Candidate content must not be treated as verified until a human has checked the exact 2026 admissions code and the undergraduate programme. Trí tuệ nhân tạo is flagged for a programme-code discrepancy.
+- `python scripts/check_mvp.py` runs Python API/SQLite/RAG source tests and the local Feature-3 Node tests when their files are present.
+- Frontend files have uncommitted user edits; don't overwrite them. `ui/app.js` may still have the older 16-second request timeout. The 125-second timeout fix can be applied **on the user's Mac** without resetting the UI.
