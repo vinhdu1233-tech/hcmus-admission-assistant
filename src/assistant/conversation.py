@@ -83,6 +83,25 @@ def interest_reply(message: str) -> tuple[str, str, str] | None:
 
 
 
+
+# Academic subject anchors permit open-ended replies without accidentally
+# grounding arts/sports hobbies on incidental shared words in profile text.
+ACADEMIC_FOCUS = (
+    "sinh hoc", "cong nghe sinh hoc", "hoa hoc", "vat ly", "vi mach",
+    "ban dan", "moi truong", "dia chat", "hai duong", "hat nhan",
+    "y khoa", "toan hoc", "toan tin", "vat lieu", "robot",
+    "phan mem", "may tinh", "lap trinh", "thong ke", "du lieu",
+    "ky thuat dien tu", "truyen thong", "vien thong",
+)
+
+
+def has_academic_focus(message: str) -> bool:
+    simple = _fold(message)
+    return any(re.search(r"(?<![a-z0-9])" + re.escape(topic) + r"(?![a-z0-9])", simple)
+               for topic in ACADEMIC_FOCUS)
+
+
+
 @dataclass(frozen=True)
 class Context:
     question: str = ""
@@ -153,6 +172,7 @@ class ConversationManager:
                 and 3 <= len(message.strip()) <= 110
                 and year is None and year_reply is None
                 and not re.search(r"(?<!\d)20\d{2}(?!\d)", message)
+                and has_academic_focus(message)
                 and retrieve_majors(message, previous.year, limit=1)):
                 # Also accept free-form short interests supported by SQLite,
                 # e.g. 'sinh học' or 'thiết kế vi mạch'. Do not force unrelated
