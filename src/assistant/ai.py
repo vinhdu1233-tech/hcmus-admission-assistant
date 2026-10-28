@@ -1,6 +1,6 @@
 """Optional AI explanation of HCMUS major recommendations after SQLite retrieval.
 
-Use AI_PROVIDER=gemini for Google's Free Tier or AI_PROVIDER=openai for OpenAI.
+Use AI_PROVIDER=ollama for no-key local inference, gemini or openai for clouds.
 Every program code must already exist in retrieved SQLite candidates.
 No API key/network/provider failure => safe, deterministic retrieval fallback.
 """
@@ -160,11 +160,78 @@ def _explain_openai(question: str, candidates: list[dict]) -> dict[str, str] | N
         return None
 
 
+
+def _explain_ollama(question: str, candidates: list[dict]) -> dict[str, str] | None:
+    """Query only local Ollama; never send student questions to an online endpoint.
+
+    qwen3:4b supports Ollama JSON schemas. Keep the URL loopback-only to
+    avoid accidentally disclosing data outside the user's own machine.
+    """
+    from urllib import error, request
+
+    model = os.getenv("OLLAMA_MODEL", "qwen3:4b").strip()
+    if not model or len(model) > 120:
+        return None
+    codes = [row["code"] for row in candidates]
+    schema = {
+        "type": "object",
+        "properties": {
+            "recommendations": {
+                "type": "array",
+                "maxItems": 3,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "code": {"type": "string", "enum": codes},
+                        "reason": {"type": "string"},
+                    },
+                    "required": ["code", "reason"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "required": ["recommendations"],
+        "additionalProperties": False,
+    }
+    payload = {
+        "model": model,
+        "system": INSTRUCTIONS,
+        "prompt": json.dumps({
+            "student_question": question,
+            "candidates": _evidence(candidates),
+            "response_requirement": "Trả về một JSON object với key recommendations.",
+        }, ensure_ascii=False),
+        "format": schema,
+        "stream": False,
+        "think": False,
+        "options": {"temperature": 0.2, "num_predict": 350},
+    }
+    req = request.Request(
+        "http://127.0.0.1:11434/api/generate",
+        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with request.urlopen(req, timeout=100) as response:
+            if response.status != 200:
+                return None
+            # Restrict parsing to 64 KiB, with explicit cap for malformed output.
+            raw = response.read(65537)
+            if len(raw) > 65536:
+                return None
+        result = json.loads(raw)
+        return _validate(json.loads(result["response"]), candidates)
+    except (error.URLError, TimeoutError, ValueError, KeyError, TypeError, OSError):
+        return None
+
 def explain_with_ai(question: str, candidates: list[dict]) -> dict[str, str] | None:
     """Return validated code->reason; server renders the official source records."""
     if not candidates:
         return None
     provider = os.getenv("AI_PROVIDER", "openai").strip().lower()
+    if provider == "ollama":
+        return _explain_ollama(question, candidates)
     if provider == "gemini":
         return _explain_gemini(question, candidates)
     if provider == "openai":
