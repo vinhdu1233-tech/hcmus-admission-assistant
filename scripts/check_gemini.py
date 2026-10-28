@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
 
 key = os.getenv("GEMINI_API_KEY", "").strip()
-model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 print("AI_PROVIDER =", os.getenv("AI_PROVIDER", "(not set)"))
 print("GEMINI_MODEL =", model)
