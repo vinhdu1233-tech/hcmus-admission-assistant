@@ -192,3 +192,138 @@ async function loadMode(){
   if(isApi)updateStatus('API MODE · Câu trả lời đến từ FastAPI; hãy đối chiếu nguồn và năm áp dụng.');
 }
 loadMode();
+
+
+/* Feature 3 — Year/method-specific admission checklist, separate from chatbot. */
+import { ADMISSION_METHODS, PORTAL, commonTasks } from './admission-methods.js';
+const planner={
+ year:document.querySelector('#planner-year'),method:document.querySelector('#planner-method'),
+ path:document.querySelector('#planner-path'),pathWrap:document.querySelector('#planner-path-wrap'),
+ methodHelp:document.querySelector('#planner-method-help'),profile:document.querySelector('#planner-profile'),
+ sources:document.querySelector('#planner-source-box'),list:document.querySelector('#planner-task-list'),
+ percentage:document.querySelector('#planner-percentage'),progress:document.querySelector('#planner-progress-track'),
+ fill:document.querySelector('#planner-progress-fill'),counter:document.querySelector('#planner-counter'),
+ summary:document.querySelector('#planner-summary'),saved:document.querySelector('#planner-saved'),
+ addForm:document.querySelector('#planner-add-form'),addInput:document.querySelector('#planner-new-task'),
+ reset:document.querySelector('#planner-reset')
+};
+let plannerState={done:[],extra:[]};
+function selectedMethod(){return (ADMISSION_METHODS[planner.year.value]||[]).find(m=>m.id===planner.method.value)||null;}
+function selectedPath(){return selectedMethod()?.paths?.find(p=>p.id===planner.path.value)||null;}
+function plannerKey(){return 'hcmus-guide:planner:v3:'+planner.year.value+':'+(planner.method.value||'none')+':'+(planner.path.value||'none');}
+function readPlanner(){
+ try{
+  const s=JSON.parse(localStorage.getItem(plannerKey())||'{}');
+  return {
+    done:Array.isArray(s.done)?s.done.filter(v=>typeof v==='string'):[],
+    extra:Array.isArray(s.extra)?s.extra.filter(v=>v&&typeof v.id==='string'&&typeof v.title==='string').slice(0,25):[]
+  };
+ }catch{return {done:[],extra:[]};}
+}
+function savePlanner(){
+ try{localStorage.setItem(plannerKey(),JSON.stringify(plannerState));planner.saved.textContent='ĐÃ LƯU TRÊN THIẾT BỊ';}
+ catch{planner.saved.textContent='KHÔNG THỂ LƯU TRÊN THIẾT BỊ';}
+}
+function setOptions(select,items,preferred){
+ select.replaceChildren();
+ for(const item of items){const option=document.createElement('option');option.value=item.value;option.textContent=item.label;select.append(option);}
+ if(items.some(x=>x.value===preferred))select.value=preferred;
+}
+function loadPlanner(){plannerState=readPlanner();planner.saved.textContent='ĐÃ TẢI KẾ HOẠCH';renderPlanner();}
+function updateMethods(preferred){
+ const methods=ADMISSION_METHODS[planner.year.value]||[];
+ if(methods.length){planner.method.disabled=false;setOptions(planner.method,methods.map(m=>({value:m.id,label:m.label})),preferred);}
+ else{planner.method.disabled=true;setOptions(planner.method,[{value:'',label:'Chưa có phương thức được xác minh'}],'');}
+ updatePath();
+}
+function updatePath(preferred){
+ const method=selectedMethod();
+ if(method?.paths?.length){
+  planner.pathWrap.hidden=false;
+  setOptions(planner.path,method.paths.map(p=>({value:p.id,label:p.label})),preferred);
+ }else{
+  planner.pathWrap.hidden=true;setOptions(planner.path,[{value:'',label:'Không cần nhánh xét tuyển'}],'');
+ }
+ loadPlanner();
+}
+function renderPlanner(){
+ const method=selectedMethod(),path=selectedPath();
+ planner.list.replaceChildren();planner.profile.replaceChildren();planner.sources.replaceChildren();
+ const tasks=method?[...commonTasks(planner.year.value),...method.tasks,...(path?.tasks||[]),...plannerState.extra]:[];
+ if(!method){
+  const note=document.createElement('p');note.className='planner-empty';
+  note.textContent='Chưa có dữ liệu phương thức tuyển sinh năm '+planner.year.value+' được xác minh. Vui lòng chọn năm 2025 hoặc 2026.';
+  planner.profile.append(note);
+  planner.methodHelp.textContent='Chưa có phương thức được xác minh cho năm này.';
+ }else{
+  planner.methodHelp.textContent=planner.year.value==='2026'
+    ?'Năm 2026 có 1a, 1b, 2; ĐGNL và THPT là hai nhánh của phương thức 2.'
+    :'Năm 2025 có phương thức 1a, 1b, 1c, 1d, 2 và 3.';
+  const kicker=document.createElement('small');
+  kicker.textContent='NĂM '+planner.year.value+' · PHƯƠNG THỨC '+method.id.toUpperCase()+(path?' · '+path.id.toUpperCase():'');
+  const title=document.createElement('strong');title.textContent=method.short;
+  const desc=document.createElement('p');desc.textContent=method.summary+(path?' '+path.summary:'');
+  planner.profile.append(kicker,title,desc);
+  const head=document.createElement('span');head.className='planner-sources-title';head.textContent='THAM KHẢO NGUỒN HCMUS';
+  const link=document.createElement('a');link.href=method.source;link.target='_blank';link.rel='noopener noreferrer';
+  link.textContent='Xem thông báo Phương thức '+method.id+' năm '+planner.year.value+' ↗';
+  const all=document.createElement('a');all.href=PORTAL;all.target='_blank';all.rel='noopener noreferrer';all.textContent='Xem danh sách phương thức ↗';
+  planner.sources.append(head,link,all);
+ }
+ for(const task of tasks){
+  const line=document.createElement('div');line.className='planner-task';
+  const label=document.createElement('label');label.className='planner-task-label';
+  const check=document.createElement('input');check.type='checkbox';check.checked=plannerState.done.includes(task.id);
+  check.setAttribute('aria-label','Đã hoàn thành: '+task.title);
+  const content=document.createElement('span');content.className='planner-task-content';
+  const title=document.createElement('strong');title.textContent=task.title;content.append(title);
+  if(task.detail){const detail=document.createElement('small');detail.textContent=task.detail;content.append(detail);}
+  label.append(check,content);line.append(label);
+  check.addEventListener('change',()=>{
+   plannerState.done=check.checked?[...new Set([...plannerState.done,task.id])]:plannerState.done.filter(id=>id!==task.id);
+   savePlanner();renderPlanner();
+  });
+  if(task.id.startsWith('custom-')){
+   const remove=document.createElement('button');remove.type='button';remove.className='planner-remove';
+   remove.textContent='×';remove.setAttribute('aria-label','Xóa việc: '+task.title);
+   remove.addEventListener('click',()=>{
+    plannerState.extra=plannerState.extra.filter(v=>v.id!==task.id);
+    plannerState.done=plannerState.done.filter(id=>id!==task.id);
+    savePlanner();renderPlanner();
+   });
+   line.append(remove);
+  }
+  planner.list.append(line);
+ }
+ const completed=tasks.filter(t=>plannerState.done.includes(t.id)).length;
+ const percent=tasks.length?Math.round(completed/tasks.length*100):0;
+ planner.percentage.textContent=percent+'%';planner.fill.style.width=percent+'%';
+ planner.progress.setAttribute('aria-valuenow',String(percent));
+ planner.counter.textContent=completed+' / '+tasks.length+' việc đã đánh dấu';
+ planner.summary.textContent=!method?'Hãy chọn năm có dữ liệu chính thức để bắt đầu.'
+  :completed===tasks.length?'Đã đánh dấu hết checklist. Tiếp tục đối chiếu thông báo của trường.'
+  :'Còn '+(tasks.length-completed)+' việc trong kế hoạch '+planner.year.value+' · '+method.id+'.';
+ planner.addForm.hidden=!method;planner.reset.disabled=!method;
+}
+planner.year.addEventListener('change',()=>updateMethods());
+planner.method.addEventListener('change',()=>updatePath());
+planner.path.addEventListener('change',loadPlanner);
+planner.addForm.addEventListener('submit',event=>{
+ event.preventDefault();if(!selectedMethod())return;
+ const title=planner.addInput.value.trim();
+ if(!title||plannerState.extra.length>=25)return;
+ const id='custom-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+ plannerState.extra.push({id,title});planner.addInput.value='';savePlanner();renderPlanner();
+});
+planner.reset.addEventListener('click',()=>{
+ if(!selectedMethod())return;
+ if(!confirm('Bỏ đánh dấu tất cả việc đã hoàn thành trong checklist hiện tại?'))return;
+ plannerState.done=[];savePlanner();renderPlanner();
+});
+document.querySelectorAll('.js-open-planner').forEach(button=>{
+ button.addEventListener('click',()=>{
+  closeAssistant();
+  requestAnimationFrame(()=>document.getElementById('planner').scrollIntoView({behavior:'smooth'}));
+ });
+});
+updateMethods('2');
