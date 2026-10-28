@@ -71,7 +71,7 @@ async function handleChat(req, res) {
   if (MODE === 'demo') return json(res,200,demoResponse(msg));
   try {
     const upstream = await fetch(new URL('/chat',API_ORIGIN), {
-      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(12000),
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(30000),
     });
     const text = await upstream.text();
     let data;
