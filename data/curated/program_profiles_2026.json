@@ -1,0 +1,34 @@
+{
+  "year": 2026,
+  "source_scope": "Undergraduate HCMUS program profile pages; summaries are manually reviewed paraphrases, NOT source quotes; admissions codes follow 2026 admissions table.",
+  "verified_on": "2026-10-28",
+  "profiles": [
+    {
+      "code": "7480101_TT",
+      "summary": "Chương trình tiên tiến Khoa học máy tính đào tạo kiến thức nền tảng và chuyên sâu về máy tính, khoa học máy tính, tập trung nghiên cứu, phân tích thuật toán và thiết kế, phát triển các giải pháp công nghệ thông tin. Trang giới thiệu chương trình ghi ngôn ngữ giảng dạy là tiếng Anh.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-khoa-hoc-may-tinh-chuong-trinh-tien-tien/",
+      "reviewed_on": "2026-10-28"
+    },
+    {
+      "code": "7480201_DKD",
+      "summary": "Chương trình Công nghệ thông tin tăng cường tiếng Anh giới thiệu các hướng học như công nghệ thông tin, hệ thống thông tin, khoa học máy tính, khoa học dữ liệu, kỹ thuật phần mềm, mạng máy tính và thị giác máy tính. Nội dung đề cập phân tích và quản trị dữ liệu, thiết kế và vận hành hệ thống thông tin.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-thong-tin-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-28"
+    },
+    {
+      "code": "7480201_NN",
+      "summary": "Nhóm ngành Máy tính và Công nghệ thông tin gồm các hướng Công nghệ thông tin, Hệ thống thông tin, Kỹ thuật phần mềm và Khoa học máy tính. Trang HCMUS giải thích Hệ thống thông tin gắn CNTT với quy trình quản lý tổ chức, còn Kỹ thuật phần mềm tập trung phát triển và vận hành sản phẩm phần mềm.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nhom-nganh-may-tinh-va-cong-nghe-thong-tin/",
+      "reviewed_on": "2026-10-28"
+    }
+  ],
+  "review_flags": [
+    {
+      "code": "7480107",
+      "name": "Trí tuệ nhân tạo",
+      "status": "review_required",
+      "reason": "2026 admissions code is 7480107 but the program-profile page prints 7480207; do not match or rewrite admissions code without verification.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-tri-tue-nhan-tao/"
+    }
+  ]
+}
