@@ -110,7 +110,8 @@ def test_reset_discarded_context():
         alone = send(client, session, "2026", year=2026)
     assert reset["status"] == "answered"
     assert alone["status"] == "clarification_needed"
-    assert "A01" not in alone["answer"]
+    assert "Các ngành/nhóm ngành được ghi nhận" not in alone["answer"]
+    assert alone["sources"] == []
 
 
 def test_old_clients_without_conversation_id_remain_stateless():
