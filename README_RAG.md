@@ -130,8 +130,8 @@ Reference: https://developers.openai.com/api/docs/guides/text and https://develo
 
 See [README_MVP_3_TASKS.md](README_MVP_3_TASKS.md) for the step-by-step Mac workflow.
 
-- The SQLite admissions dataset has 39/39 codes, **not** 39 official programme descriptions.
-- `data/curated/program_profiles_2026.json` currently has 5 manually reviewed profile summaries with official HCMUS URLs. The `program_profiles` table is populated by `python -m src.database.db`.
-- `scripts/discover_program_profiles.py` generates a review queue of candidate official pages. Candidate content must not be treated as verified until a human has checked the exact 2026 admissions code and the undergraduate programme. Trí tuệ nhân tạo is flagged for a programme-code discrepancy.
+- The 2026 SQLite admissions dataset has 39/39 codes and **39/39 source-backed programme overview summaries**. These are concise editorial paraphrases of HCMUS admissions and faculty pages, not complete curricula.
+- `data/curated/program_profiles_2026.json` contains 39 summaries and source URLs from the HCMUS admissions portal or official math/physics faculties. Rebuild `program_profiles` with `python -m src.database.db`. The AI detailed page has an inconsistent code; it is documented in `review_flags`.
+- `scripts/discover_program_profiles.py` still creates a review-only queue for future changes. Trí tuệ nhân tạo remains flagged for an inconsistent code in a separate school detail page, though both the 2026 admissions list and the original pilot approval confirm its admissions code.
 - `python scripts/check_mvp.py` runs Python API/SQLite/RAG source tests and the local Feature-3 Node tests when their files are present.
 - Frontend files have uncommitted user edits; don't overwrite them. `ui/app.js` may still have the older 16-second request timeout. The 125-second timeout fix can be applied **on the user's Mac** without resetting the UI.
