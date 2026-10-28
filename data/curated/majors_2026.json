@@ -1,26 +1,710 @@
 {
- "year":2026,
- "verified_on":"2026-10-28",
- "scope":"Verified SUBSET of 2026 programs; NOT the full 39 programs",
- "source":{"title":"Thông tin tuyển sinh HCMUS năm 2026 — ngành và tổ hợp (cập nhật 10/7/2026)","url":"https://tuyensinh.hcmus.edu.vn/2026-thong-tin-tuyen-sinh/"},
- "majors":[
-  {"code":"7420101","name":"Sinh học","quota":215,"combinations":["A02","B00","B03","B08","X15","X16"],"tags":["sinh học","sinh vật","nghiên cứu"]},
-  {"code":"7420201","name":"Công nghệ Sinh học","quota":200,"combinations":["A02","B00","B03","B08","X15","X16"],"tags":["sinh học","công nghệ sinh học","nghiên cứu"]},
-  {"code":"74401a1","name":"Công nghệ bán dẫn","quota":70,"combinations":["A00","A01","A02","A03","C01","X06"],"tags":["bán dẫn","vật lý","điện tử","vi mạch"]},
-  {"code":"7440112","name":"Hoá học","quota":230,"combinations":["A00","B00","C02","D07","X11","X12"],"tags":["hóa học","nghiên cứu","thí nghiệm"]},
-  {"code":"7440301","name":"Khoa học Môi trường","quota":130,"combinations":["A00","B00","D07","B08","X10","X14"],"tags":["môi trường","sinh học","hóa học"]},
-  {"code":"7460101_NN","name":"Nhóm ngành Toán học (Toán học, Toán ứng dụng, Toán tin)","quota":180,"combinations":["A00","A01","B00","B08","D01","X06"],"tags":["toán","toán học","toán tin","phân tích"]},
-  {"code":"7460108_DKD","name":"Khoa học dữ liệu (Chương trình tăng cường tiếng Anh)","quota":60,"combinations":["A00","A01","B00","B08","D01","X06"],"tags":["dữ liệu","phân tích","toán","thống kê","lập trình"]},
-  {"code":"7480101_TT","name":"Khoa học máy tính (Chương trình Tiên tiến)","quota":90,"combinations":["A00","A01","B08","D07","X06","X26"],"tags":["lập trình","máy tính","thuật toán","phần mềm","toán"]},
-  {"code":"7480107","name":"Trí tuệ nhân tạo","quota":90,"combinations":["A00","A01","B08","D07","X06","X26"],"tags":["ai","trí tuệ nhân tạo","lập trình","toán","dữ liệu"]},
-  {"code":"7480201_DKD","name":"Công nghệ thông tin (Chương trình tăng cường tiếng Anh)","quota":530,"combinations":["A00","A01","B08","D07","X06","X26"],"tags":["lập trình","công nghệ thông tin","phần mềm","máy tính"]},
-  {"code":"7480201_NN","name":"Nhóm ngành máy tính và Công nghệ thông tin (CNTT, Kỹ thuật phần mềm, Hệ thống thông tin, Khoa học máy tính)","quota":490,"combinations":["A00","A01","B08","D07","X06","X26"],"tags":["lập trình","máy tính","kỹ thuật phần mềm","hệ thống thông tin","công nghệ thông tin"]},
-  {"code":"7520207","name":"Kỹ thuật điện tử – viễn thông","quota":150,"combinations":["A00","A01","A02","B08","X06","X26"],"tags":["điện tử","viễn thông","mạch","vật lý","công nghệ"]},
-  {"code":"75202a1","name":"Thiết kế vi mạch","quota":80,"combinations":["A00","A01","A02","B08","X06","X26"],"tags":["vi mạch","bán dẫn","điện tử","mạch","vật lý"]}
- ],
- "methods":[
-  {"code":"1a","name":"Xét tuyển thẳng / ưu tiên theo Bộ GDĐT","summary":"Xét tuyển thẳng, ưu tiên xét tuyển theo quy định của Bộ Giáo dục và Đào tạo.","url":"https://tuyensinh.hcmus.edu.vn/2026-thong-bao-ve-phuong-thuc-xet-tuyen-1a/"},
-  {"code":"1b","name":"Xét tuyển thí sinh quốc tịch nước ngoài","summary":"Dành cho thí sinh quốc tịch nước ngoài tốt nghiệp trung học phổ thông của nước ngoài theo điều kiện công bố.","url":"https://tuyensinh.hcmus.edu.vn/2026-thong-bao-ve-phuong-thuc-xet-tuyen-1b/"},
-  {"code":"2","name":"Kết hợp điểm thi và học bạ","summary":"Kết hợp điểm học bạ 3 năm với điểm thi tốt nghiệp THPT 2026 hoặc điểm thi ĐGNL ĐHQG-HCM 2026.","url":"https://tuyensinh.hcmus.edu.vn/2026-thong-bao-ve-phuong-thuc-xet-tuyen-2/"}
- ]
+  "year": 2026,
+  "verified_on": "2026-10-28",
+  "scope": "Official HCMUS 2026 admissions table: 39 programs/groups, 4926 quotas, captured from published source; review against the website before release",
+  "source": {
+    "title": "Thông tin tuyển sinh HCMUS năm 2026 — ngành và tổ hợp (cập nhật 10/7/2026)",
+    "url": "https://tuyensinh.hcmus.edu.vn/2026-thong-tin-tuyen-sinh/"
+  },
+  "majors": [
+    {
+      "code": "7420101",
+      "name": "Sinh học",
+      "quota": 215,
+      "combinations": [
+        "A02",
+        "B00",
+        "B03",
+        "B08",
+        "X15",
+        "X16"
+      ],
+      "tags": [
+        "sinh học",
+        "sinh vật",
+        "nghiên cứu"
+      ]
+    },
+    {
+      "code": "7420101_DKD",
+      "name": "Sinh học (Chương trình tăng cường tiếng Anh)",
+      "quota": 90,
+      "combinations": [
+        "A02",
+        "B00",
+        "B03",
+        "B08",
+        "X15",
+        "X16"
+      ],
+      "tags": [
+        "sinh học"
+      ]
+    },
+    {
+      "code": "7420201",
+      "name": "Công nghệ Sinh học",
+      "quota": 200,
+      "combinations": [
+        "A02",
+        "B00",
+        "B03",
+        "B08",
+        "X15",
+        "X16"
+      ],
+      "tags": [
+        "sinh học",
+        "công nghệ sinh học",
+        "nghiên cứu"
+      ]
+    },
+    {
+      "code": "7420201_DKD",
+      "name": "Công nghệ Sinh học (Chương trình tăng cường tiếng Anh)",
+      "quota": 160,
+      "combinations": [
+        "A02",
+        "B00",
+        "B03",
+        "B08",
+        "X15",
+        "X16"
+      ],
+      "tags": [
+        "sinh học",
+        "công nghệ sinh học"
+      ]
+    },
+    {
+      "code": "7440102_DKD",
+      "name": "Vật lý học (Chương trình tăng cường tiếng Anh)",
+      "quota": 140,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "A03",
+        "C01",
+        "X06"
+      ],
+      "tags": [
+        "vật lý"
+      ]
+    },
+    {
+      "code": "7440102_NN",
+      "name": "Nhóm ngành Vật lý học (CT: 145), Công nghệ Vật lý điện tử và tin học (CT: 70)",
+      "quota": 215,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "A03",
+        "C01",
+        "X06"
+      ],
+      "tags": [
+        "vật lý",
+        "điện tử"
+      ]
+    },
+    {
+      "code": "7440107_DKD",
+      "name": "Công nghệ Vật lý điện tử và tin học (Chương trình tăng cường tiếng Anh)",
+      "quota": 60,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "A03",
+        "C01",
+        "X06"
+      ],
+      "tags": [
+        "vật lý",
+        "điện tử"
+      ]
+    },
+    {
+      "code": "74401a1",
+      "name": "Công nghệ bán dẫn",
+      "quota": 70,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "A03",
+        "C01",
+        "X06"
+      ],
+      "tags": [
+        "bán dẫn",
+        "vật lý",
+        "điện tử",
+        "vi mạch"
+      ]
+    },
+    {
+      "code": "7440112",
+      "name": "Hoá học",
+      "quota": 230,
+      "combinations": [
+        "A00",
+        "B00",
+        "C02",
+        "D07",
+        "X11",
+        "X12"
+      ],
+      "tags": [
+        "hóa học",
+        "nghiên cứu",
+        "thí nghiệm"
+      ]
+    },
+    {
+      "code": "7440112_DKD",
+      "name": "Hóa học (Chương trình tăng cường tiếng Anh)",
+      "quota": 150,
+      "combinations": [
+        "A00",
+        "B00",
+        "C02",
+        "D07",
+        "X11",
+        "X12"
+      ],
+      "tags": [
+        "hóa học"
+      ]
+    },
+    {
+      "code": "7440122",
+      "name": "Khoa học Vật liệu",
+      "quota": 148,
+      "combinations": [
+        "A00",
+        "A01",
+        "B00",
+        "C01",
+        "C02",
+        "D07"
+      ],
+      "tags": [
+        "hóa học",
+        "vật liệu"
+      ]
+    },
+    {
+      "code": "7440122_DKD",
+      "name": "Khoa học Vật liệu (Chương trình tăng cường tiếng Anh)",
+      "quota": 80,
+      "combinations": [
+        "A00",
+        "A01",
+        "B00",
+        "C01",
+        "C02",
+        "D07"
+      ],
+      "tags": [
+        "hóa học",
+        "vật liệu"
+      ]
+    },
+    {
+      "code": "7440201_NN",
+      "name": "Nhóm ngành Địa chất học, Kinh tế đất đai",
+      "quota": 104,
+      "combinations": [
+        "A00",
+        "A07",
+        "C01",
+        "C04",
+        "D01",
+        "D10"
+      ],
+      "tags": [
+        "địa chất"
+      ]
+    },
+    {
+      "code": "7440228",
+      "name": "Hải dương học",
+      "quota": 30,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "A04",
+        "C01",
+        "X06"
+      ],
+      "tags": [
+        "hải dương"
+      ]
+    },
+    {
+      "code": "7440228_DKD",
+      "name": "Hải dương học (Chương trình tăng cường tiếng Anh)",
+      "quota": 30,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "A04",
+        "C01",
+        "X06"
+      ],
+      "tags": [
+        "hải dương"
+      ]
+    },
+    {
+      "code": "7440301",
+      "name": "Khoa học Môi trường",
+      "quota": 130,
+      "combinations": [
+        "A00",
+        "B00",
+        "D07",
+        "B08",
+        "X10",
+        "X14"
+      ],
+      "tags": [
+        "môi trường",
+        "sinh học",
+        "hóa học"
+      ]
+    },
+    {
+      "code": "7440301_DKD",
+      "name": "Khoa học Môi trường (Chương trình tăng cường tiếng Anh)",
+      "quota": 80,
+      "combinations": [
+        "A00",
+        "B00",
+        "D07",
+        "B08",
+        "X10",
+        "X14"
+      ],
+      "tags": [
+        "hóa học",
+        "môi trường"
+      ]
+    },
+    {
+      "code": "7460101_NN",
+      "name": "Nhóm ngành Toán học (Toán học, Toán ứng dụng, Toán tin)",
+      "quota": 180,
+      "combinations": [
+        "A00",
+        "A01",
+        "B00",
+        "B08",
+        "D01",
+        "X06"
+      ],
+      "tags": [
+        "toán",
+        "toán học",
+        "toán tin",
+        "phân tích"
+      ]
+    },
+    {
+      "code": "7460112_DKD",
+      "name": "Toán ứng dụng (Chương trình tăng cường tiếng Anh)",
+      "quota": 40,
+      "combinations": [
+        "A00",
+        "A01",
+        "B00",
+        "B08",
+        "D01",
+        "X06"
+      ],
+      "tags": [
+        "toán"
+      ]
+    },
+    {
+      "code": "7460117_DKD",
+      "name": "Toán tin (Chương trình tăng cường tiếng Anh)",
+      "quota": 40,
+      "combinations": [
+        "A00",
+        "A01",
+        "B00",
+        "B08",
+        "D01",
+        "X06"
+      ],
+      "tags": [
+        "toán",
+        "toán tin"
+      ]
+    },
+    {
+      "code": "7460108_NN",
+      "name": "Nhóm ngành Khoa học dữ liệu (CT:40), Thống kê (CT:40)",
+      "quota": 80,
+      "combinations": [
+        "A00",
+        "A01",
+        "B00",
+        "B08",
+        "D01",
+        "X06"
+      ],
+      "tags": [
+        "thống kê",
+        "khoa học dữ liệu",
+        "dữ liệu",
+        "hóa học"
+      ]
+    },
+    {
+      "code": "7460108_DKD",
+      "name": "Khoa học dữ liệu (Chương trình tăng cường tiếng Anh)",
+      "quota": 60,
+      "combinations": [
+        "A00",
+        "A01",
+        "B00",
+        "B08",
+        "D01",
+        "X06"
+      ],
+      "tags": [
+        "dữ liệu",
+        "phân tích",
+        "toán",
+        "thống kê",
+        "lập trình"
+      ]
+    },
+    {
+      "code": "7480101_TT",
+      "name": "Khoa học máy tính (Chương trình Tiên tiến)",
+      "quota": 90,
+      "combinations": [
+        "A00",
+        "A01",
+        "B08",
+        "D07",
+        "X06",
+        "X26"
+      ],
+      "tags": [
+        "lập trình",
+        "máy tính",
+        "thuật toán",
+        "phần mềm",
+        "toán"
+      ]
+    },
+    {
+      "code": "7480107",
+      "name": "Trí tuệ nhân tạo",
+      "quota": 90,
+      "combinations": [
+        "A00",
+        "A01",
+        "B08",
+        "D07",
+        "X06",
+        "X26"
+      ],
+      "tags": [
+        "ai",
+        "trí tuệ nhân tạo",
+        "lập trình",
+        "toán",
+        "dữ liệu"
+      ]
+    },
+    {
+      "code": "7480201_DKD",
+      "name": "Công nghệ thông tin (Chương trình tăng cường tiếng Anh)",
+      "quota": 530,
+      "combinations": [
+        "A00",
+        "A01",
+        "B08",
+        "D07",
+        "X06",
+        "X26"
+      ],
+      "tags": [
+        "lập trình",
+        "công nghệ thông tin",
+        "phần mềm",
+        "máy tính"
+      ]
+    },
+    {
+      "code": "7480201_NN",
+      "name": "Nhóm ngành máy tính và Công nghệ thông tin (CNTT, Kỹ thuật phần mềm, Hệ thống thông tin, Khoa học máy tính)",
+      "quota": 490,
+      "combinations": [
+        "A00",
+        "A01",
+        "B08",
+        "D07",
+        "X06",
+        "X26"
+      ],
+      "tags": [
+        "lập trình",
+        "máy tính",
+        "kỹ thuật phần mềm",
+        "hệ thống thông tin",
+        "công nghệ thông tin"
+      ]
+    },
+    {
+      "code": "7510401_DKD",
+      "name": "Công nghệ kỹ thuật Hoá học (Chương trình tăng cường tiếng Anh)",
+      "quota": 150,
+      "combinations": [
+        "A00",
+        "B00",
+        "C02",
+        "D07",
+        "X11",
+        "X12"
+      ],
+      "tags": [
+        "hóa học",
+        "kỹ thuật"
+      ]
+    },
+    {
+      "code": "7510402",
+      "name": "Công nghệ Vật liệu",
+      "quota": 147,
+      "combinations": [
+        "A00",
+        "A01",
+        "B00",
+        "C01",
+        "C02",
+        "D07"
+      ],
+      "tags": [
+        "vật liệu"
+      ]
+    },
+    {
+      "code": "7510402_DKD",
+      "name": "Công nghệ Vật liệu (Chương trình tăng cường tiếng Anh)",
+      "quota": 60,
+      "combinations": [
+        "A00",
+        "A01",
+        "B00",
+        "C01",
+        "C02",
+        "D07"
+      ],
+      "tags": [
+        "vật liệu"
+      ]
+    },
+    {
+      "code": "7510406",
+      "name": "Công nghệ Kỹ thuật Môi trường",
+      "quota": 120,
+      "combinations": [
+        "A00",
+        "B00",
+        "B08",
+        "D07",
+        "X10",
+        "X14"
+      ],
+      "tags": [
+        "môi trường",
+        "kỹ thuật"
+      ]
+    },
+    {
+      "code": "7520207",
+      "name": "Kỹ thuật điện tử – viễn thông",
+      "quota": 150,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "B08",
+        "X06",
+        "X26"
+      ],
+      "tags": [
+        "điện tử",
+        "viễn thông",
+        "mạch",
+        "vật lý",
+        "công nghệ"
+      ]
+    },
+    {
+      "code": "75202a1",
+      "name": "Thiết kế vi mạch",
+      "quota": 80,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "B08",
+        "X06",
+        "X26"
+      ],
+      "tags": [
+        "vi mạch",
+        "bán dẫn",
+        "điện tử",
+        "mạch",
+        "vật lý"
+      ]
+    },
+    {
+      "code": "7520207_DKD",
+      "name": "Kỹ thuật điện tử – viễn thông (Chương trình tăng cường tiếng Anh)",
+      "quota": 120,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "B08",
+        "X06",
+        "X26"
+      ],
+      "tags": [
+        "điện tử",
+        "kỹ thuật"
+      ]
+    },
+    {
+      "code": "7520402",
+      "name": "Kỹ thuật hạt nhân",
+      "quota": 55,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "A03",
+        "C01",
+        "X06"
+      ],
+      "tags": [
+        "kỹ thuật"
+      ]
+    },
+    {
+      "code": "7520403",
+      "name": "Vật lý y khoa",
+      "quota": 35,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "A03",
+        "C01",
+        "X06"
+      ],
+      "tags": [
+        "vật lý"
+      ]
+    },
+    {
+      "code": "7520403_DKD",
+      "name": "Vật lý y khoa (chương trình tăng cường tiếng Anh)",
+      "quota": 30,
+      "combinations": [
+        "A00",
+        "A01",
+        "A02",
+        "A03",
+        "C01",
+        "X06"
+      ],
+      "tags": [
+        "vật lý"
+      ]
+    },
+    {
+      "code": "7520501",
+      "name": "Kỹ thuật địa chất",
+      "quota": 38,
+      "combinations": [
+        "A00",
+        "C01",
+        "C02",
+        "C04",
+        "D01",
+        "D10"
+      ],
+      "tags": [
+        "địa chất",
+        "kỹ thuật"
+      ]
+    },
+    {
+      "code": "7850101",
+      "name": "Quản lý tài nguyên và môi trường",
+      "quota": 109,
+      "combinations": [
+        "A00",
+        "B00",
+        "D07",
+        "B08",
+        "X10",
+        "X14"
+      ],
+      "tags": [
+        "môi trường"
+      ]
+    },
+    {
+      "code": "7140103",
+      "name": "Công nghệ giáo dục",
+      "quota": 100,
+      "combinations": [
+        "A00",
+        "A01",
+        "B00",
+        "C01",
+        "D01",
+        "D07"
+      ],
+      "tags": [
+        "giáo dục"
+      ]
+    }
+  ],
+  "methods": [
+    {
+      "code": "1a",
+      "name": "Xét tuyển thẳng / ưu tiên theo Bộ GDĐT",
+      "summary": "Xét tuyển thẳng, ưu tiên xét tuyển theo quy định của Bộ Giáo dục và Đào tạo.",
+      "url": "https://tuyensinh.hcmus.edu.vn/2026-thong-bao-ve-phuong-thuc-xet-tuyen-1a/"
+    },
+    {
+      "code": "1b",
+      "name": "Xét tuyển thí sinh quốc tịch nước ngoài",
+      "summary": "Dành cho thí sinh quốc tịch nước ngoài tốt nghiệp trung học phổ thông của nước ngoài theo điều kiện công bố.",
+      "url": "https://tuyensinh.hcmus.edu.vn/2026-thong-bao-ve-phuong-thuc-xet-tuyen-1b/"
+    },
+    {
+      "code": "2",
+      "name": "Kết hợp điểm thi và học bạ",
+      "summary": "Kết hợp điểm học bạ 3 năm với điểm thi tốt nghiệp THPT 2026 hoặc điểm thi ĐGNL ĐHQG-HCM 2026.",
+      "url": "https://tuyensinh.hcmus.edu.vn/2026-thong-bao-ve-phuong-thuc-xet-tuyen-2/"
+    }
+  ]
 }
