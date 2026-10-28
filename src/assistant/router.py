@@ -87,8 +87,8 @@ def route(message:str,year:int|None)->dict:
         candidates=retrieve_majors(message,y,limit=5)
         if not candidates:
             return response(
-                'Bạn thích lĩnh vực hoặc hoạt động nào (ví dụ: lập trình, toán, dữ liệu, sinh học, vật lý)? '
-                'Mình cần thêm thông tin để tìm ngành phù hợp trong dữ liệu HCMUS.',
+                'Bạn đang quan tâm môn học hoặc hoạt động nào (ví dụ: lập trình, dữ liệu, vật lý, sinh học)? '
+                'Mình cần thêm một sở thích để tìm ngành trong dữ liệu HCMUS.',
                 intent,'clarification_needed')
         explanations=explain_with_ai(message,candidates)
         if explanations:
@@ -96,21 +96,33 @@ def route(message:str,year:int|None)->dict:
             lines='\n'.join(
                 f"• {r['name']} ({r['code']}): {explanations[r['code']]}"
                 for r in chosen)
-            intro='AI hỗ trợ giải thích mức độ liên quan giữa sở thích và các ngành đã truy xuất từ database:'
+            intro='Dựa trên sở thích bạn chia sẻ, đây là các hướng ngành đáng tìm hiểu:'
         else:
             chosen=candidates[:3]
             lines='\n'.join(
-                f"• {r['name']} ({r['code']}): từ khóa liên quan: "
-                +(', '.join(r['tags'][:4]) if r['tags'] else 'tên ngành')
+                f"• {r['name']} ({r['code']}): "
+                +(r['official_profile'] if r.get('official_profile') else
+                  'Tên ngành và các từ khóa liên quan gợi ý đây có thể là lựa chọn để bạn tìm hiểu thêm.')
                 for r in chosen)
-            intro='Gợi ý sơ bộ từ dữ liệu đã truy xuất (AI chưa cấu hình hoặc tạm không khả dụng):'
+            intro='Gợi ý từ dữ liệu truy xuất (AI tạm không khả dụng hoặc chưa cấu hình):'
         sources=[]
         for row in chosen:
-            if row['source_url'] not in [s['url'] for s in sources]:
-                sources.append({'title':row['source_title'],'url':row['source_url'],'admission_year':y})
-        notice=('Từ khóa phục vụ tìm kiếm do nhóm biên soạn, không phải mô tả chương trình đào tạo '
-                'chính thức. Đây là gợi ý tham khảo, không phải kết luận về mức độ phù hợp.')
-        return response(intro+'\n'+lines+'\n'+notice+'\n'+coverage_note(y),intent,sources=sources)
+            urls=[(row['source_url'],row['source_title'])]
+            if row.get('official_profile') and row.get('profile_source_url'):
+                urls.insert(0,(row['profile_source_url'],'Giới thiệu chương trình '+row['name']+' – HCMUS'))
+            for url,title in urls:
+                if not any(s['url']==url for s in sources):
+                    sources.append({'title':title,'url':url,'admission_year':y})
+        if any(word in clean for word in ('lap trinh','python','code','toan','du lieu')):
+            followup='Bạn thích hơn việc xây dựng ứng dụng, giải bài toán thuật toán hay phân tích dữ liệu?'
+        else:
+            followup='Bạn thích hoạt động nào nhất trong lĩnh vực này để mình gợi ý sát hơn?'
+        notice=('Đây là gợi ý tham khảo, không phải đánh giá năng lực hay kết luận trúng tuyển. '
+                'Chỉ những ngành có liên kết giới thiệu riêng mới có mô tả chương trình đã đối chiếu; '
+                'các ngành khác dùng tên ngành và từ khóa do nhóm biên soạn.')
+        return response(
+            intro+'\n'+lines+'\n'+followup+'\n'+notice+'\n'+coverage_note(y),
+            intent,sources=sources)
     if intent in ('major_filter','admission_lookup'):
         found=[c for c in COMBINATIONS if re.search(r'(?<![A-Z0-9])'+c+r'(?![A-Z0-9])',message.upper())]
         if len(found)>1:return response('Bạn muốn tìm theo tổ hợp nào? Vui lòng nhập một mã tổ hợp (ví dụ A01).',intent,'clarification_needed')
