@@ -98,10 +98,30 @@ async function handleChat(req, res) {
   }
 }
 
+// Explicitly reset the context for the current browser only.
+// The same HttpOnly session ID is forwarded to FastAPI's existing reset action.
+async function handleConversationReset(req,res) {
+  const session=conversationSession(req);
+  if (MODE === 'demo') return json(res,200,{ok:true},session.headers);
+  try {
+    const upstream=await fetch(new URL('/chat',API_ORIGIN),{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:'bắt đầu lại',conversation_id:session.id}),
+      signal:AbortSignal.timeout(10000),
+    });
+    if (!upstream.ok) throw new Error('RESET_UPSTREAM_FAILED');
+    return json(res,200,{ok:true},session.headers);
+  } catch {
+    return json(res,503,{ok:false,message:'Không thể bắt đầu hội thoại mới. Hãy kiểm tra FastAPI.'},session.headers);
+  }
+}
+
 const server = http.createServer(async (req,res) => {
   const url = new URL(req.url || '/',`http://localhost:${PORT}`);
   if (url.pathname === '/api/config' && req.method === 'GET') return json(res,200,{mode:MODE,version:'1.0.0'});
   if (url.pathname === '/api/chat' && req.method === 'POST') return handleChat(req,res);
+  if (url.pathname === '/api/conversation/reset' && req.method === 'POST') return handleConversationReset(req,res);
   if (url.pathname.startsWith('/api/')) return json(res,404,safeError('NOT_FOUND','Không tìm thấy API.'));
   if (req.method !== 'GET' && req.method !== 'HEAD') return json(res,405,safeError('METHOD_NOT_ALLOWED','Phương thức không hỗ trợ.'));
   if (url.pathname === '/ui' || url.pathname === '/ui/') {
