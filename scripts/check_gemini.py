@@ -28,7 +28,7 @@ try:
     from google import genai
     from google.genai import types
 
-    with genai.Client(api_key=key, http_options=types.HttpOptions(timeout=18000)) as client:
+    with genai.Client(api_key=key, http_options=types.HttpOptions(timeout=60000)) as client:
         result = client.models.generate_content(
             model=model,
             contents="Trả lời đúng một từ: OK",
