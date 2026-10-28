@@ -93,13 +93,12 @@ def retrieve_majors(question: str, year: int, limit: int = 5) -> list[dict]:
 
     for row, doc, dl in zip(rows, documents, length):
         score = 0.0
-        for term, qf in query_frequency.items():
+        for term in query_frequency:
             tf = doc.get(term, 0)
             if not tf:
                 continue
             idf = math.log(1 + (n - df[term] + 0.5) / (df[term] + 0.5))
             score += idf * tf * 2.2 / (tf + 1.2 * (0.25 + 0.75 * dl / avgdl))
-            score *= 1.0  # Keep individual contributions interpretable.
         if score > 0:
             item = dict(row)
             item["tags"] = json.loads(row["tags_json"])
