@@ -45,13 +45,21 @@ def main() -> int:
             return 1
         print("PASS: Browser session proxy checks")
 
+    if node and (ROOT / "tests" / "test_web_product.mjs").exists():
+        if not run([node, "--check", "ui/app.js"], env):
+            return 1
+        if not run([node, "--test", "tests/test_web_product.mjs"], env):
+            print("FAIL: Served web product smoke checks")
+            return 1
+        print("PASS: Served web product: 3 features, error handling and new chat")
+
     planner = ROOT / "ui" / "admission-methods.js"
     planner_test = ROOT / "tests" / "test_planner_methods.mjs"
 
     if not node or not planner.exists() or not planner_test.exists():
         print("\nCHECK MANUALLY: Feature 3 Node tests are missing in this checkout.")
-        print("Your local untracked ui/admission-methods.js and "
-              "tests/test_planner_methods.mjs may exist on Mac but not GitHub.")
+        print("The required ui/admission-methods.js and "
+              "tests/test_planner_methods.mjs are missing in this checkout.")
         print("Do not claim Feature 3 passed until files are available and tested.")
     else:
         if not run([node, "--check", str(planner)], env):
