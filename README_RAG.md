@@ -24,22 +24,22 @@ If you have unstaged local frontend changes, **stash or commit them before** doi
 ## Run free local AI with Ollama — recommended when Gemini REST returns 503
 
 This is the **offline / no-API-key demo** option. It does not call Google or OpenAI.
-The FastAPI backend uses Ollama's local HTTP API at \`127.0.0.1:11434\`.
+The FastAPI backend uses Ollama's local HTTP API at `127.0.0.1:11434`.
 Only the five SQLite-retrieved program candidates (official names/codes plus editorial tags) enter the local model prompt. The model may return JSON explanations but cannot add official-looking programs or URLs.
 
-1. Install Ollama for macOS from https://ollama.com/download/mac (Apple Silicon or Intel as supported by the installer). Open Ollama once to start the local server. If you installed a command-line-only build, run \`ollama serve\` in a separate Terminal.
-2. Download model: \`ollama pull qwen3:4b\` (~2.5 GB model download). For a smaller RAM footprint, use \`ollama pull qwen3:1.7b\` (~1.4 GB) and change \`OLLAMA_MODEL\` below. The smaller model may give weaker Vietnamese explanations.
-3. Check local server: \`ollama list\` and \`curl http://127.0.0.1:11434/api/tags\`.
-4. Edit \`.env\` (not \`.env.example\`) in repository root:
-   \`\`\`dotenv
+1. Install Ollama for macOS from https://ollama.com/download/mac (Apple Silicon or Intel as supported by the installer). Open Ollama once to start the local server. If you installed a command-line-only build, run `ollama serve` in a separate Terminal.
+2. Download model: `ollama pull qwen3:4b` (~2.5 GB model download). For a smaller RAM footprint, use `ollama pull qwen3:1.7b` (~1.4 GB) and change `OLLAMA_MODEL` below. The smaller model may give weaker Vietnamese explanations.
+3. Check local server: `ollama list` and `curl http://127.0.0.1:11434/api/tags`.
+4. Edit `.env` (not `.env.example`) in repository root:
+   ```dotenv
    AI_PROVIDER=ollama
    OLLAMA_MODEL=qwen3:4b
    GEMINI_API_KEY=
    OPENAI_API_KEY=
-   \`\`\`
-   If you already have valid keys stored securely, they may remain in \`.env\`: \`AI_PROVIDER=ollama\` calls no cloud API, but never commit or share the secrets.
-5. Restart FastAPI with \`python -m uvicorn src.api.main:app --reload --port 8000\` and restart Node in the \`ui/\` directory with \`CHAT_MODE=api PORT=5501 npm start\`.
-6. Ask: \`Em thích lập trình và toán, nên chọn ngành nào năm 2026?\`. A successful local AI explanation starts with \`AI hỗ trợ giải thích\`; when the model is unavailable, the site still gives source-backed retrieval fallback.
+   ```
+   If you already have valid keys stored securely, they may remain in `.env`: `AI_PROVIDER=ollama` calls no cloud API, but never commit or share the secrets.
+5. Restart FastAPI with `python -m uvicorn src.api.main:app --reload --port 8000` and restart Node in the `ui/` directory with `CHAT_MODE=api PORT=5501 npm start`.
+6. Ask: `Em thích lập trình và toán, nên chọn ngành nào năm 2026?`. A successful local AI explanation starts with `AI hỗ trợ giải thích`; when the model is unavailable, the site still gives source-backed retrieval fallback.
 
 **Limits:** Local inference uses your Mac's CPU/GPU/RAM and can be slower. The model download needs an internet connection once; afterwards generation can happen offline. The server proxies are configured with a longer timeout for local inference. Local models may struggle with strict JSON/complex Vietnamese wording; validated IDs + fallback prevent fictitious programs from being shown.
 
