@@ -52,7 +52,7 @@ Bạn: Còn xây dựng ứng dụng?
 Bot: [Gợi ý theo hướng phần mềm/CNTT, vẫn thuộc năm 2026]
 ```
 
-Hệ thống chỉ diễn giải lựa chọn ngắn nếu **cùng phiên đang thảo luận khám phá ngành**. Ba hướng được hỗ trợ: phát triển ứng dụng, thuật toán, phân tích dữ liệu. Không lấy ý tưởng do Ollama bịa thành thông tin tuyển sinh chính thức.
+Hệ thống chỉ diễn giải lựa chọn ngắn nếu **cùng phiên đang thảo luận khám phá ngành**. Ba hướng trả lời nhanh được hỗ trợ: phát triển ứng dụng, thuật toán, phân tích dữ liệu. Ngoài ra, học sinh có thể nhắn sở thích ngắn khác như “sinh học” hay “thiết kế vi mạch”; chỉ khi Retrieval tìm được ngành tương ứng trong SQLite thì chatbot mới tiếp tục gợi ý. Nếu không tìm thấy bằng chứng, chatbot yêu cầu làm rõ thay vì bịa ngành. Không lấy ý tưởng do Ollama bịa thành thông tin tuyển sinh chính thức.
 
 **Reset:** nhắn `bắt đầu lại` hoặc `reset` để quên câu hỏi gần nhất của phiên. Phiên tự hết hạn sau **1 giờ** không hoạt động hoặc khi FastAPI khởi động lại. Tối đa 500 phiên được giữ trong RAM; không lưu lịch sử chat hay dữ liệu cá nhân vào SQLite.
 
