@@ -9,6 +9,8 @@ from src.assistant.router import route
 @pytest.fixture(autouse=True)
 def isolated_database(tmp_path,monkeypatch):
     monkeypatch.setenv('HCMUS_DB_PATH',str(tmp_path/'test.sqlite3'))
+    # No external AI requests during database/router tests, even if .env has a key.
+    monkeypatch.setenv('AI_PROVIDER','none')
     initialize_database()
 
 def test_sqlite_tables_and_source():
