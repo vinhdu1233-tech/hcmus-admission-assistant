@@ -1,6 +1,6 @@
 {
   "year": 2026,
-  "source_scope": "2026 official HCMUS admissions identifiers. Each profiles[] summary paraphrases a matching program-page title on the official HCMUS admissions portal; page and variant differences are tracked in review_flags, not silently equated.",
+  "source_scope": "2026 HCMUS admissions programs: 39 profile-level summaries, each grounded in school admissions pages or official HCMUS faculty descriptions. AI (7480107) has a documented code discrepancy on a separate school detail page; never silently rewrite admissions codes.",
   "verified_on": "2026-10-29",
   "profiles": [
     {
@@ -206,43 +206,48 @@
       "summary": "Công nghệ giáo dục kết hợp khoa học giáo dục và công nghệ thông tin để thiết kế, phát triển giải pháp hỗ trợ dạy và học. Chương trình giới thiệu ứng dụng e-learning, nội dung học tập số và công nghệ giáo dục trong các môi trường giảng dạy, đào tạo.",
       "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-giao-duc/",
       "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "74401a1",
+      "summary": "Công nghệ bán dẫn tại HCMUS kết hợp kiến thức vật lý, hóa học, khoa học vật liệu, điện tử và khoa học máy tính để nghiên cứu, phát triển công nghệ vi mạch bán dẫn. Trang Khoa Vật lý–Vật lý kỹ thuật xác nhận mã xét tuyển 74401a1 và mô tả các mục tiêu đào tạo liên ngành.",
+      "source_url": "https://phys.hcmus.edu.vn/vi/nganh-hoc/cong-nghe-ban-dan-thiet-ke-vi-mach",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7460112_DKD",
+      "summary": "Chương trình Toán ứng dụng tăng cường tiếng Anh tập trung vận dụng toán học và tính toán vào mô hình hóa, mô phỏng, tối ưu và giải quyết các vấn đề thực tiễn, bao gồm các hướng tài chính định lượng và khoa học tính toán. Khoa Toán–Tin học xác nhận mã 7460112_DKD trên trang chương trình.",
+      "source_url": "https://www.math.hcmus.edu.vn/dao-tao-dai-hoc/chuong-trinh-tcta/nganh-toan-ung-dung",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7460117_DKD",
+      "summary": "Chương trình Toán tin tăng cường tiếng Anh kết hợp nền tảng toán học, khoa học tính toán và khoa học máy tính, với định hướng lập trình, thuật toán và xử lý dữ liệu. Trang Khoa Toán–Tin học nêu các hướng phương pháp toán trong tin học, toán tin ứng dụng và khoa học dữ liệu cho mã 7460117_DKD.",
+      "source_url": "https://math.hcmus.edu.vn/dao-tao-dai-hoc/chuong-trinh-tcta/nganh-toan-tin",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7460108_DKD",
+      "summary": "Chương trình Khoa học dữ liệu tăng cường tiếng Anh kết hợp toán học, xác suất, thống kê, máy học và trí tuệ nhân tạo để thu thập, phân tích dữ liệu và xây dựng mô hình thông minh. Khoa Toán–Tin học công bố trang chương trình mang mã 7460108_DKD.",
+      "source_url": "https://math.hcmus.edu.vn/dao-tao-dai-hoc/chuong-trinh-tcta/nganh-khoa-hoc-du-lieu",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7480107",
+      "summary": "Ngành Trí tuệ nhân tạo được giới thiệu trên cổng HCMUS với các lĩnh vực cốt lõi gồm học máy, xử lý ngôn ngữ tự nhiên và thị giác máy tính, kết hợp lý thuyết và thực hành. Mã xét tuyển 2026 được công bố là 7480107 và trùng mã trong quyết định mở ngành thí điểm; trang giới thiệu chi tiết khác của trường có mã không nhất quán và cần lưu ý khi đối chiếu.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-moi/",
+      "reviewed_on": "2026-10-29",
+      "source_note": "2026 admissions + 2021 pilot approval use code 7480107; detailed page https://tuyensinh.hcmus.edu.vn/nganh-tri-tue-nhan-tao/ prints 7480207. We only use the broader official 'nganh-moi' overview for this summary."
     }
   ],
   "review_flags": [
     {
       "code": "7480107",
       "name": "Trí tuệ nhân tạo",
-      "status": "review_required",
-      "reason": "2026 admissions code is 7480107 but the program-profile page prints 7480207; do not match or rewrite admissions code without verification.",
-      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-tri-tue-nhan-tao/"
-    },
-    {
-      "code": "74401a1",
-      "name": "Công nghệ bán dẫn",
-      "status": "review_required",
-      "reason": "2026 admissions code 74401a1; the only catalog profile is a cử nhân tài năng with program code 7440108, not confirmed as the same 2026 admission track.",
-      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-ban-dan-chuong-trinh-cu-nhan-tai-nang/"
-    },
-    {
-      "code": "7460112_DKD",
-      "name": "Toán ứng dụng tăng cường tiếng Anh",
-      "status": "review_required",
-      "reason": "2026 admissions list the major but the school catalog labels the specialized English program 'dự kiến' and does not provide a separate program-description page.",
-      "source_url": "https://tuyensinh.hcmus.edu.vn/khoa-dao-tao/"
-    },
-    {
-      "code": "7460117_DKD",
-      "name": "Toán tin tăng cường tiếng Anh",
-      "status": "review_required",
-      "reason": "2026 admissions list the major but the school catalog labels the specialized English program 'dự kiến' and does not provide a separate program-description page.",
-      "source_url": "https://tuyensinh.hcmus.edu.vn/khoa-dao-tao/"
-    },
-    {
-      "code": "7460108_DKD",
-      "name": "Khoa học dữ liệu tăng cường tiếng Anh",
-      "status": "review_required",
-      "reason": "2026 admissions list this major but the faculty catalog says 'dự kiến' and has no verified separate program description for the enhanced English track.",
-      "source_url": "https://tuyensinh.hcmus.edu.vn/khoa-dao-tao/"
+      "status": "source_discrepancy_documented",
+      "reason": "2026 admissions table and 2021 official pilot-approval decision both use 7480107; the separate detailed-profile page still prints 7480207. The summary is grounded only in the school 'nganh-moi' overview and does not change the official 2026 admission code.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-tri-tue-nhan-tao/",
+      "alternative_source_url": "https://tuyensinh.hcmus.edu.vn/2026-thong-tin-tuyen-sinh/",
+      "decision_url": "https://tuyensinh.hcmus.edu.vn/wp-content/uploads/2025/09/QD947_QD-mo-nganh-Tri-tue-nhan-tao.pdf"
     }
   ]
 }
