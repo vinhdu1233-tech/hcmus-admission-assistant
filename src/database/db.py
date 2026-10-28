@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DB = ROOT / 'data' / 'processed' / 'hcmus.sqlite3'
 SEED = ROOT / 'data' / 'curated' / 'majors_2026.json'
+PROFILES_SEED = ROOT / 'data' / 'curated' / 'program_profiles_2026.json'
 
 SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -32,6 +33,12 @@ CREATE TABLE IF NOT EXISTS admission_methods (
   year INTEGER NOT NULL, code TEXT NOT NULL, name TEXT NOT NULL,
   summary TEXT NOT NULL, source_url TEXT NOT NULL,
   PRIMARY KEY(year, code)
+);
+CREATE TABLE IF NOT EXISTS program_profiles (
+  year INTEGER NOT NULL, major_code TEXT NOT NULL,
+  summary TEXT NOT NULL, source_url TEXT NOT NULL, reviewed_on TEXT NOT NULL,
+  PRIMARY KEY(year, major_code),
+  FOREIGN KEY(year, major_code) REFERENCES majors(year, code)
 );
 CREATE INDEX IF NOT EXISTS idx_combinations_year_code ON major_combinations(year, combination);
 """
@@ -66,6 +73,26 @@ def initialize_database(path: Path | None = None, seed_path: Path | None = None)
             db.execute('DELETE FROM major_combinations WHERE year=? AND major_code=?',(year,item['code']))
             db.executemany('INSERT INTO major_combinations(year,major_code,combination) VALUES (?,?,?)',
                            [(year,item['code'],code) for code in item['combinations']])
+        # Import only manually reviewed official profiles. Raw scrape candidates
+        # must never be injected into the assistant's evidence store.
+        if PROFILES_SEED.exists() and year == 2026:
+            profiles = json.loads(PROFILES_SEED.read_text(encoding='utf-8'))
+            if profiles['year'] != year:
+                raise ValueError('Program profile admission year mismatch')
+            known_codes = {major['code'] for major in seed['majors']}
+            items = profiles['profiles']
+            codes = [profile['code'] for profile in items]
+            if len(codes) != len(set(codes)) or not set(codes).issubset(known_codes):
+                raise ValueError('Duplicate or unknown verified program profile code')
+            if any(not str(p['source_url']).startswith('https://tuyensinh.hcmus.edu.vn/')
+                   or not p.get('reviewed_on') or not p.get('summary')
+                   for p in items):
+                raise ValueError('Program profiles require official HCMUS URLs and manual review')
+            db.execute('DELETE FROM program_profiles WHERE year=?', (year,))
+            db.executemany(
+                'INSERT INTO program_profiles(year,major_code,summary,source_url,reviewed_on) VALUES (?,?,?,?,?)',
+                [(year,p['code'],p['summary'],p['source_url'],p['reviewed_on']) for p in items]
+            )
         for item in seed['methods']:
             db.execute('INSERT OR REPLACE INTO admission_methods(year,code,name,summary,source_url) VALUES (?,?,?,?,?)',
                        (year,item['code'],item['name'],item['summary'],item['url']))
@@ -100,8 +127,11 @@ def all_majors(year:int) -> list[dict]:
         rows=db.execute('''SELECT m.code,m.name,m.quota,m.tags_json,
                (SELECT GROUP_CONCAT(c.combination, ', ') FROM major_combinations c
                 WHERE c.year=m.year AND c.major_code=m.code) AS combinations,
-               s.url as source_url,
-               s.title as source_title FROM majors m JOIN sources s ON s.id=m.source_id
+               s.url as source_url, s.title as source_title,
+               p.summary as official_profile, p.source_url as profile_source_url,
+               p.reviewed_on as profile_reviewed_on
+               FROM majors m JOIN sources s ON s.id=m.source_id
+               LEFT JOIN program_profiles p ON p.year=m.year AND p.major_code=m.code
                WHERE m.year=? ORDER BY m.name''',(year,)).fetchall()
     return [dict(r) for r in rows]
 
