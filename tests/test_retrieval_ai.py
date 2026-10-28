@@ -100,7 +100,7 @@ def test_gemini_sdk_mock_returns_valid_codes(monkeypatch):
 
     class FakeModels:
         def generate_content(self, **kwargs):
-            assert kwargs["model"] == "gemini-2.5-flash-lite"
+            assert kwargs["model"] == "gemini-3.5-flash-lite"
             assert kwargs["config"].response_mime_type == "application/json"
             assert target in kwargs["contents"]
             return types.SimpleNamespace(text=json.dumps({
@@ -121,7 +121,7 @@ def test_gemini_sdk_mock_returns_valid_codes(monkeypatch):
     monkeypatch.setattr(genai, "Client", FakeClient)
     monkeypatch.setenv("AI_PROVIDER", "gemini")
     monkeypatch.setenv("GEMINI_API_KEY", "mock-gemini-only")
-    monkeypatch.setenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
     result = explain_with_ai("Em thích lập trình", candidates)
     assert list(result) == [target]
     assert called["closed"]
