@@ -76,6 +76,17 @@ def retrieve_majors(question: str, year: int, limit: int = 5) -> list[dict]:
     if not rows:
         return []
 
+    # A long HCMUS profile can contain incidental words from unrelated
+    # hobbies. Require at least one meaningful subject anchor in programme
+    # names or editorial tags before scoring the expanded profile text.
+    anchors = [
+        set(tokens(row["name"] + " " + " ".join(json.loads(row["tags_json"]))))
+        for row in rows
+    ]
+    meaningful_terms = {term for term in terms if len(term) >= 3 or term == "ai"}
+    if not meaningful_terms or not any(meaningful_terms & anchor for anchor in anchors):
+        return []
+
     documents = []
     for row in rows:
         tags = json.loads(row["tags_json"])
