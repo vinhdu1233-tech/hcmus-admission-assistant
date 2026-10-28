@@ -37,7 +37,7 @@ Câu trả lời có dẫn URL của HCMUS khi truy xuất được bằng chứ
 
 ## Chạy dự án trên macOS/Linux
 
-**Yêu cầu:** Python 3.10+; Node.js 18+; Ollama nếu muốn AI local (không bắt buộc để thử tra cứu).
+**Yêu cầu:** Python 3.10+ (**khuyến nghị Python 3.13 trên macOS**); Node.js 18+; Ollama nếu muốn AI local (không bắt buộc để thử tra cứu). macOS có thể mặc định dùng Python 3.9: hãy kiểm tra phiên bản trước khi tạo `.venv`.
 
 1. Clone GitHub và đi vào thư mục dự án:
 
@@ -51,13 +51,17 @@ Câu trả lời có dẫn URL của HCMUS khi truy xuất được bằng chứ
 2. Cài Python và tạo dữ liệu:
 
    ```bash
-   python3 -m venv .venv
+   python3.13 --version
+   python3.13 -m venv .venv
    source .venv/bin/activate
+   python --version
    python -m pip install -r requirements-backend-dev.txt
    cp .env.example .env
    python -m src.database.db
    python scripts/check_profiles_2026.py
    ```
+
+   Nếu chưa có `python3.13`, trên Mac có Homebrew bạn có thể chạy `brew install python@3.13`. Nếu đã lỡ tạo `.venv` bằng Python 3.9, hãy `deactivate`, đổi tên môi trường cũ (`mv .venv .venv-python39-backup`), rồi tạo lại bằng `python3.13 -m venv .venv` và cài lại dependencies. Không cần xóa dữ liệu dự án.
 
    File `.env` là file **chỉ giữ trên máy** (đã có trong `.gitignore`). Không đưa API key, token lên GitHub.
 
