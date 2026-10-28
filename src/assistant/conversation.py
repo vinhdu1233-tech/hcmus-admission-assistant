@@ -69,9 +69,9 @@ def interest_reply(message: str) -> tuple[str, str, str] | None:
     This never makes claims about a program; it selects retrieval keywords.
     """
     simple = _fold(message).strip().strip("?.! ")
-    if len(simple) > 110 or re.search(r"(?<!\\d)20\\d{2}(?!\\d)", simple):
+    if len(simple) > 110 or re.search(r"(?<!\d)20\d{2}(?!\d)", simple):
         return None
-    if re.search(r"\\b(?:a0[0-9]|b00|d0[0-9]|x[0-9]{2})\\b", simple):
+    if re.search(r"\b(?:a0[0-9]|b00|d0[0-9]|x[0-9]{2})\b", simple):
         return None
     matches = []
     for label, variants, description, search_terms in INTEREST_FOCUS:
@@ -141,7 +141,6 @@ class ConversationManager:
         original = message
         effective_year = year
         focused = None
-        focus_label = ""
         interest_seed = previous.interest_seed
 
         # The previous AI recommendation specifically asked the student to
@@ -149,9 +148,9 @@ class ConversationManager:
         if previous.awaiting_interest and not previous.pending_year:
             focused = interest_reply(message)
             if focused is not None:
-                focus_label, description, search_terms = focused
+                _, description, _ = focused
                 seed = previous.interest_seed or previous.question
-                seed = re.sub(r"(?<!\\d)20\\d{2}(?!\\d)", "", seed)[:220].strip()
+                seed = re.sub(r"(?<!\d)20\d{2}(?!\d)", "", seed)[:220].strip()
                 interest_seed = previous.interest_seed or previous.question
                 original = (
                     f"Em thích {description}. Trước đó em chia sẻ: {seed}. "
