@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from src.assistant.router import detect_intent, extract_year, route
+from src.assistant.retrieval import retrieve_majors
 
 YEAR_REQUIRED = frozenset({
     "major_filter", "admission_lookup", "admission_methods",
@@ -147,6 +148,16 @@ class ConversationManager:
         # choose a focus; a short answer is NOT a new unrelated question.
         if previous.awaiting_interest and not previous.pending_year:
             focused = interest_reply(message)
+            if (focused is None and intent in ("unknown", "major_exploration")
+                and previous.year is not None
+                and 3 <= len(message.strip()) <= 110
+                and year is None and year_reply is None
+                and not re.search(r"(?<!\d)20\d{2}(?!\d)", message)
+                and retrieve_majors(message, previous.year, limit=1)):
+                # Also accept free-form short interests supported by SQLite,
+                # e.g. 'sinh học' or 'thiết kế vi mạch'. Do not force unrelated
+                # replies into a recommendation without retrieval evidence.
+                focused = ("sở thích", message.strip(), message.strip())
             if focused is not None:
                 _, description, _ = focused
                 seed = previous.interest_seed or previous.question
