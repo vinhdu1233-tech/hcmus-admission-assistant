@@ -16,6 +16,7 @@ TEST_FILES = [
     "tests/test_db_router.py",
     "tests/test_retrieval_ai.py",
     "tests/test_official_profiles.py",
+    "tests/test_conversation.py",
 ]
 
 
@@ -36,6 +37,12 @@ def main() -> int:
     print("\nPASS: Backend, Feature 1, Feature 2 (mock AI + source checks)")
 
     node = shutil.which("node")
+    if node and (ROOT / "tests" / "test_conversation_proxy.mjs").exists():
+        if not run([node, "--test", "tests/test_conversation_proxy.mjs"], env):
+            print("FAIL: Node per-browser conversation cookie tests")
+            return 1
+        print("PASS: Browser session proxy checks")
+
     planner = ROOT / "ui" / "admission-methods.js"
     planner_test = ROOT / "tests" / "test_planner_methods.mjs"
 
