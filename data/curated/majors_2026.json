@@ -1,0 +1,26 @@
+{
+ "year":2026,
+ "verified_on":"2026-10-28",
+ "scope":"Verified SUBSET of 2026 programs; NOT the full 39 programs",
+ "source":{"title":"Thông tin tuyển sinh HCMUS năm 2026 — ngành và tổ hợp (cập nhật 10/7/2026)","url":"https://tuyensinh.hcmus.edu.vn/2026-thong-tin-tuyen-sinh/"},
+ "majors":[
+  {"code":"7420101","name":"Sinh học","quota":215,"combinations":["A02","B00","B03","B08","X15","X16"],"tags":["sinh học","sinh vật","nghiên cứu"]},
+  {"code":"7420201","name":"Công nghệ Sinh học","quota":200,"combinations":["A02","B00","B03","B08","X15","X16"],"tags":["sinh học","công nghệ sinh học","nghiên cứu"]},
+  {"code":"74401a1","name":"Công nghệ bán dẫn","quota":70,"combinations":["A00","A01","A02","A03","C01","X06"],"tags":["bán dẫn","vật lý","điện tử","vi mạch"]},
+  {"code":"7440112","name":"Hoá học","quota":230,"combinations":["A00","B00","C02","D07","X11","X12"],"tags":["hóa học","nghiên cứu","thí nghiệm"]},
+  {"code":"7440301","name":"Khoa học Môi trường","quota":130,"combinations":["A00","B00","D07","B08","X10","X14"],"tags":["môi trường","sinh học","hóa học"]},
+  {"code":"7460101_NN","name":"Nhóm ngành Toán học (Toán học, Toán ứng dụng, Toán tin)","quota":180,"combinations":["A00","A01","B00","B08","D01","X06"],"tags":["toán","toán học","toán tin","phân tích"]},
+  {"code":"7460108_DKD","name":"Khoa học dữ liệu (Chương trình tăng cường tiếng Anh)","quota":60,"combinations":["A00","A01","B00","B08","D01","X06"],"tags":["dữ liệu","phân tích","toán","thống kê","lập trình"]},
+  {"code":"7480101_TT","name":"Khoa học máy tính (Chương trình Tiên tiến)","quota":90,"combinations":["A00","A01","B08","D07","X06","X26"],"tags":["lập trình","máy tính","thuật toán","phần mềm","toán"]},
+  {"code":"7480107","name":"Trí tuệ nhân tạo","quota":90,"combinations":["A00","A01","B08","D07","X06","X26"],"tags":["ai","trí tuệ nhân tạo","lập trình","toán","dữ liệu"]},
+  {"code":"7480201_DKD","name":"Công nghệ thông tin (Chương trình tăng cường tiếng Anh)","quota":530,"combinations":["A00","A01","B08","D07","X06","X26"],"tags":["lập trình","công nghệ thông tin","phần mềm","máy tính"]},
+  {"code":"7480201_NN","name":"Nhóm ngành máy tính và Công nghệ thông tin (CNTT, Kỹ thuật phần mềm, Hệ thống thông tin, Khoa học máy tính)","quota":490,"combinations":["A00","A01","B08","D07","X06","X26"],"tags":["lập trình","máy tính","kỹ thuật phần mềm","hệ thống thông tin","công nghệ thông tin"]},
+  {"code":"7520207","name":"Kỹ thuật điện tử – viễn thông","quota":150,"combinations":["A00","A01","A02","B08","X06","X26"],"tags":["điện tử","viễn thông","mạch","vật lý","công nghệ"]},
+  {"code":"75202a1","name":"Thiết kế vi mạch","quota":80,"combinations":["A00","A01","A02","B08","X06","X26"],"tags":["vi mạch","bán dẫn","điện tử","mạch","vật lý"]}
+ ],
+ "methods":[
+  {"code":"1a","name":"Xét tuyển thẳng / ưu tiên theo Bộ GDĐT","summary":"Xét tuyển thẳng, ưu tiên xét tuyển theo quy định của Bộ Giáo dục và Đào tạo.","url":"https://tuyensinh.hcmus.edu.vn/2026-thong-bao-ve-phuong-thuc-xet-tuyen-1a/"},
+  {"code":"1b","name":"Xét tuyển thí sinh quốc tịch nước ngoài","summary":"Dành cho thí sinh quốc tịch nước ngoài tốt nghiệp trung học phổ thông của nước ngoài theo điều kiện công bố.","url":"https://tuyensinh.hcmus.edu.vn/2026-thong-bao-ve-phuong-thuc-xet-tuyen-1b/"},
+  {"code":"2","name":"Kết hợp điểm thi và học bạ","summary":"Kết hợp điểm học bạ 3 năm với điểm thi tốt nghiệp THPT 2026 hoặc điểm thi ĐGNL ĐHQG-HCM 2026.","url":"https://tuyensinh.hcmus.edu.vn/2026-thong-bao-ve-phuong-thuc-xet-tuyen-2/"}
+ ]
+}
