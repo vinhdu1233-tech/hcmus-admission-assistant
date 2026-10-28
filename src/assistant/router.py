@@ -93,13 +93,13 @@ def route(message:str,year:int|None)->dict:
         explanations=explain_with_ai(message,candidates)
         if explanations:
             chosen=[r for r in candidates if r['code'] in explanations][:3]
-            lines='\\n'.join(
+            lines='\n'.join(
                 f"• {r['name']} ({r['code']}): {explanations[r['code']]}"
                 for r in chosen)
             intro='AI hỗ trợ giải thích mức độ liên quan giữa sở thích và các ngành đã truy xuất từ database:'
         else:
             chosen=candidates[:3]
-            lines='\\n'.join(
+            lines='\n'.join(
                 f"• {r['name']} ({r['code']}): từ khóa liên quan: "
                 +(', '.join(r['tags'][:4]) if r['tags'] else 'tên ngành')
                 for r in chosen)
@@ -110,7 +110,7 @@ def route(message:str,year:int|None)->dict:
                 sources.append({'title':row['source_title'],'url':row['source_url'],'admission_year':y})
         notice=('Từ khóa phục vụ tìm kiếm do nhóm biên soạn, không phải mô tả chương trình đào tạo '
                 'chính thức. Đây là gợi ý tham khảo, không phải kết luận về mức độ phù hợp.')
-        return response(intro+'\\n'+lines+'\\n'+notice+'\\n'+coverage_note(y),intent,sources=sources)
+        return response(intro+'\n'+lines+'\n'+notice+'\n'+coverage_note(y),intent,sources=sources)
     if intent in ('major_filter','admission_lookup'):
         found=[c for c in COMBINATIONS if re.search(r'(?<![A-Z0-9])'+c+r'(?![A-Z0-9])',message.upper())]
         if len(found)>1:return response('Bạn muốn tìm theo tổ hợp nào? Vui lòng nhập một mã tổ hợp (ví dụ A01).',intent,'clarification_needed')
