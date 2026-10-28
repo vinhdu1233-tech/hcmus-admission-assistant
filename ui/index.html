@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#eaf4fc">
-  <meta name="description" content="HCMUS Guide — dự án sinh viên hỗ trợ khám phá thông tin tuyển sinh HCMUS, ngành học và chuẩn bị năm nhất. Không phải trang chính thức của trường.">
+  <meta name="description" content="HCMUS Guide — dự án sinh viên hỗ trợ khám phá thông tin tuyển sinh HCMUS, ngành học và theo dõi chuẩn bị hồ sơ. Không phải trang chính thức của trường.">
   <title>HCMUS Guide — Một hành trình, nhiều hướng đi</title>
   <link rel="icon" href="assets/h-icon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,13 +24,14 @@
       <a href="#story">Câu chuyện</a>
       <a href="#campus">HCMUS</a>
       <a href="#explore">Khám phá</a>
+      <a href="#planner">Checklist</a>
       <a href="#sources">Nguồn tin</a>
     </nav>
     <button type="button" class="nav-cta js-open-chat" aria-haspopup="dialog" aria-controls="assistant-modal">TRÒ CHUYỆN <span aria-hidden="true">↗</span></button>
     <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Mở menu" aria-expanded="false" aria-controls="mobile-nav"><span></span><span></span></button>
   </header>
   <nav class="mobile-nav" id="mobile-nav" aria-label="Điều hướng di động" hidden>
-    <a href="#story">Câu chuyện</a><a href="#campus">HCMUS</a><a href="#explore">Khám phá</a><a href="#sources">Nguồn tin</a>
+    <a href="#story">Câu chuyện</a><a href="#campus">HCMUS</a><a href="#explore">Khám phá</a><a href="#planner">Checklist</a><a href="#sources">Nguồn tin</a>
     <button type="button" class="mobile-chat js-open-chat">Mở trợ lý toàn màn hình <span aria-hidden="true">↗</span></button>
   </nav>
 
@@ -81,29 +82,76 @@
 
     <section class="explore section-pad" id="explore" aria-labelledby="explore-heading">
       <p class="section-tag"><span></span> 03 / THE POSSIBILITIES</p>
-      <div class="explore-head reveal"><h2 id="explore-heading">Bắt đầu từ điều<br><em>bạn muốn biết.</em></h2><p>Ba lối vào đơn giản để khám phá thông tin và định hướng học tập. Mọi câu hỏi đều dẫn đến một hành trình riêng.</p></div>
+      <div class="explore-head reveal"><h2 id="explore-heading">Bắt đầu từ điều<br><em>bạn muốn biết.</em></h2><p>Ba trải nghiệm riêng biệt: tra cứu tuyển sinh, khám phá ngành học và theo dõi việc chuẩn bị hồ sơ.</p></div>
       <div class="feature-list">
         <article class="feature-row reveal"><span class="feature-index">01 / ADMISSIONS</span><div class="feature-body"><h3>Tuyển sinh HCMUS</h3><p>Tra cứu phương thức tuyển sinh, ngành học và tổ hợp xét tuyển theo năm, dựa trên dữ liệu có nguồn.</p></div><button class="feature-arrow" type="button" data-question="Năm 2026 HCMUS có những phương thức tuyển sinh nào?" aria-label="Đặt câu hỏi tuyển sinh">↗</button></article>
         <article class="feature-row reveal"><span class="feature-index">02 / MAJORS</span><div class="feature-body"><h3>Khám phá ngành học</h3><p>Tìm hiểu các ngành, đặt câu hỏi theo sở thích và tiếp cận mô tả ngành từ tài liệu trường công bố.</p></div><button class="feature-arrow" type="button" data-question="Em thích lập trình và toán, nên tìm hiểu ngành nào?" aria-label="Đặt câu hỏi khám phá ngành">↗</button></article>
-        <article class="feature-row reveal"><span class="feature-index">03 / STUDY</span><div class="feature-body"><h3>Chuẩn bị cho năm nhất</h3><p>Nhận gợi ý về thói quen tự học, kiến thức nền tảng và cách chuẩn bị cho môi trường đại học.</p></div><button class="feature-arrow" type="button" data-question="Em nên chuẩn bị như thế nào trước khi vào năm nhất?" aria-label="Đặt câu hỏi chuẩn bị năm nhất">↗</button></article>
+        <article class="feature-row reveal"><span class="feature-index">03 / TRACKER</span><div class="feature-body"><h3>Checklist hồ sơ tuyển sinh</h3><p>Chọn năm và phương thức xét tuyển; xem checklist khác nhau theo điểm THPT, ĐGNL hoặc xét tuyển thẳng.</p></div><a class="feature-arrow" href="#planner" aria-label="Mở checklist và theo dõi tiến độ">↗</a></article>
       </div>
       <p class="scope-note">* Phạm vi MVP phụ thuộc dữ liệu chính thức đã được nhóm kiểm chứng. Những nội dung chưa được xác minh sẽ không được trình bày như sự thật.</p>
     </section>
 
+
+    <section class="planner section-pad" id="planner" aria-labelledby="planner-heading">
+      <div class="planner-heading-row reveal">
+        <div>
+          <p class="section-tag"><span></span> 04 / APPLICATION PLANNER</p>
+          <h2 id="planner-heading">Từng bước nhỏ.<br><em>Một hành trình rõ ràng.</em></h2>
+          <p class="planner-intro">Chọn năm và phương thức tuyển sinh HCMUS. Checklist sẽ thay đổi theo cách xét tuyển bạn sử dụng, cùng với tiến độ được lưu trên thiết bị.</p>
+        </div>
+        <div class="planner-aside-note"><span>YOUR PLAN / YOUR PACE</span><strong>Không cần tài khoản.</strong><p>Tiến độ được lưu riêng cho từng phương thức trong trình duyệt bạn đang dùng.</p></div>
+      </div>
+      <div class="planner-panel reveal">
+        <div class="planner-sidebar">
+          <span class="planner-step-tag">01 / THIẾT LẬP KẾ HOẠCH</span>
+          <label for="planner-year">Năm tuyển sinh</label>
+          <select id="planner-year" name="planner-year"><option value="2026">2026</option><option value="2025">2025</option><option value="2027">2027 (chưa xác minh)</option></select>
+          <label for="planner-method">Phương thức xét tuyển</label>
+          <select id="planner-method" name="planner-method" aria-describedby="planner-method-help"></select>
+          <p class="planner-hint" id="planner-method-help">Danh sách thay đổi theo năm tuyển sinh được chọn.</p>
+          <div class="planner-path" id="planner-path-wrap" hidden>
+            <label for="planner-path">Nhánh kết quả xét tuyển</label>
+            <select id="planner-path" name="planner-path"></select>
+            <p class="planner-hint" id="planner-path-help">Phương thức 2 năm 2026 có nhánh THPT hoặc ĐGNL, cùng kết hợp học bạ.</p>
+          </div>
+          <div class="planner-profile" id="planner-profile" role="status" aria-live="polite"></div>
+          <div class="planner-progress-box">
+            <div class="planner-progress-label"><span>TIẾN ĐỘ CÁ NHÂN</span><strong id="planner-percentage">0%</strong></div>
+            <div class="planner-progress-track" id="planner-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Tiến độ checklist"><span id="planner-progress-fill"></span></div>
+            <p id="planner-counter">0 / 0 việc đã hoàn thành</p>
+          </div>
+          <button class="planner-reset" id="planner-reset" type="button">Bỏ đánh dấu tất cả <span aria-hidden="true">↺</span></button>
+        </div>
+        <div class="planner-tasks">
+          <div class="planner-tasks-top"><span class="planner-step-tag">02 / THE CHECKLIST</span><span class="planner-saved" id="planner-saved" role="status">SẴN SÀNG</span></div>
+          <h3>Danh sách của bạn.</h3>
+          <p class="planner-help">Checklist hỗ trợ <strong>lập kế hoạch cá nhân</strong>, không phải danh sách giấy tờ bắt buộc chính thức. Hãy kiểm tra điều kiện theo ngành, năm, đối tượng và các cập nhật từ HCMUS.</p>
+          <div class="planner-source-box" id="planner-source-box"></div>
+          <div class="planner-task-list" id="planner-task-list"></div>
+          <form class="planner-add-form" id="planner-add-form">
+            <label for="planner-new-task">Thêm việc cá nhân</label>
+            <div class="planner-add-row"><input id="planner-new-task" type="text" maxlength="120" placeholder="Ví dụ: Hỏi thêm về ngành quan tâm"><button type="submit">THÊM +</button></div>
+          </form>
+          <div class="planner-bottom"><p id="planner-summary">Bắt đầu với từng bước nhỏ.</p><a href="https://tuyensinh.hcmus.edu.vn/" target="_blank" rel="noopener noreferrer">ĐỐI CHIẾU CỔNG TUYỂN SINH HCMUS ↗</a></div>
+        </div>
+      </div>
+      <p class="planner-note">Checklist chỉ là bản tóm tắt hỗ trợ theo dõi tiến độ tự đánh dấu, không dùng để nộp hồ sơ, xác nhận đủ điều kiện hoặc thay thế thông báo chính thức của HCMUS.</p>
+    </section>
+
     <section class="how section-pad" id="how" aria-labelledby="how-heading">
-      <div class="how-intro reveal"><p class="section-tag"><span></span> 04 / THE APPROACH</p><h2 id="how-heading">Không chỉ đưa ra<br><em>câu trả lời.</em></h2><p>HCMUS Guide được thiết kế theo một quy trình có thể kiểm tra: hiểu câu hỏi, tìm bằng chứng và phản hồi có trách nhiệm.</p></div>
+      <div class="how-intro reveal"><p class="section-tag"><span></span> 05 / THE APPROACH</p><h2 id="how-heading">Không chỉ đưa ra<br><em>câu trả lời.</em></h2><p>HCMUS Guide được thiết kế theo một quy trình có thể kiểm tra: hiểu câu hỏi, tìm bằng chứng và phản hồi có trách nhiệm.</p></div>
       <div class="how-steps reveal"><div><span class="step-line">01</span><h3>Đặt câu hỏi</h3><p>Nhập điều bạn đang thắc mắc bằng tiếng Việt.</p></div><div><span class="step-line">02</span><h3>Tìm thông tin</h3><p>Backend dự kiến tra cứu nguồn HCMUS và áp dụng quy tắc lọc.</p></div><div><span class="step-line">03</span><h3>Hiểu và kiểm tra</h3><p>Nhận lời giải thích; với thông tin tuyển sinh, hãy kiểm tra dẫn nguồn.</p></div></div>
       <button type="button" class="how-cta js-open-chat">BẮT ĐẦU TRÒ CHUYỆN <span aria-hidden="true">↗</span></button>
     </section>
 
     <section class="chat-invitation section-pad" id="assistant" aria-labelledby="assistant-heading">
       <div class="invitation-pattern" aria-hidden="true"></div>
-      <div class="invitation-content reveal"><p class="section-tag light"><span></span> 05 / AN OPEN CONVERSATION</p><h2 id="assistant-heading">Một câu hỏi.<br><em>Thêm một góc nhìn.</em></h2><p>Không gian trò chuyện được thiết kế toàn màn hình, để bạn có thể tập trung tìm hiểu và theo dõi những câu trả lời dài cùng nguồn tham khảo.</p><button type="button" class="invitation-button js-open-chat">MỞ TRỢ LÝ TOÀN MÀN HÌNH <span class="invitation-arrow" aria-hidden="true">↗</span></button><span class="invitation-note"><i class="status-light" aria-hidden="true"></i><span id="invitation-status">BẢN DEMO GIAO DIỆN</span></span></div>
+      <div class="invitation-content reveal"><p class="section-tag light"><span></span> 06 / AN OPEN CONVERSATION</p><h2 id="assistant-heading">Một câu hỏi.<br><em>Thêm một góc nhìn.</em></h2><p>Không gian trò chuyện được thiết kế toàn màn hình, để bạn có thể tập trung tìm hiểu và theo dõi những câu trả lời dài cùng nguồn tham khảo.</p><button type="button" class="invitation-button js-open-chat">MỞ TRỢ LÝ TOÀN MÀN HÌNH <span class="invitation-arrow" aria-hidden="true">↗</span></button><span class="invitation-note"><i class="status-light" aria-hidden="true"></i><span id="invitation-status">BẢN DEMO GIAO DIỆN</span></span></div>
       <div class="invitation-visual reveal"><div class="visual-orbit orbit-one"></div><div class="visual-orbit orbit-two"></div><div class="visual-letter">H<span>✳</span></div><div class="visual-caption">A CONVERSATION<br>THAT TAKES YOU FURTHER</div></div>
     </section>
 
     <section class="sources section-pad" id="sources" aria-labelledby="sources-heading">
-      <p class="section-tag"><span></span> 06 / TRUST THE SOURCE</p><div class="sources-grid"><div class="sources-intro reveal"><h2 id="sources-heading">Kiến thức bắt đầu<br>từ <em>nguồn tin tốt.</em></h2><p>Câu trả lời liên quan đến tuyển sinh cần được đối chiếu với thông báo chính thức và đúng năm áp dụng. Đây là các cổng thông tin để bạn tự kiểm chứng.</p></div><div class="source-links reveal"><a href="https://tuyensinh.hcmus.edu.vn/" target="_blank" rel="noopener noreferrer"><span><small>01 / ADMISSIONS</small><strong>Cổng thông tin tuyển sinh</strong></span><span aria-hidden="true">↗</span></a><a href="https://www.hcmus.edu.vn/" target="_blank" rel="noopener noreferrer"><span><small>02 / UNIVERSITY</small><strong>Trang chủ HCMUS</strong></span><span aria-hidden="true">↗</span></a><a href="https://fit.hcmus.edu.vn/" target="_blank" rel="noopener noreferrer"><span><small>03 / ACADEMICS</small><strong>Khoa Công nghệ Thông tin</strong></span><span aria-hidden="true">↗</span></a></div></div>
+      <p class="section-tag"><span></span> 07 / TRUST THE SOURCE</p><div class="sources-grid"><div class="sources-intro reveal"><h2 id="sources-heading">Kiến thức bắt đầu<br>từ <em>nguồn tin tốt.</em></h2><p>Câu trả lời liên quan đến tuyển sinh cần được đối chiếu với thông báo chính thức và đúng năm áp dụng. Đây là các cổng thông tin để bạn tự kiểm chứng.</p></div><div class="source-links reveal"><a href="https://tuyensinh.hcmus.edu.vn/" target="_blank" rel="noopener noreferrer"><span><small>01 / ADMISSIONS</small><strong>Cổng thông tin tuyển sinh</strong></span><span aria-hidden="true">↗</span></a><a href="https://www.hcmus.edu.vn/" target="_blank" rel="noopener noreferrer"><span><small>02 / UNIVERSITY</small><strong>Trang chủ HCMUS</strong></span><span aria-hidden="true">↗</span></a><a href="https://fit.hcmus.edu.vn/" target="_blank" rel="noopener noreferrer"><span><small>03 / ACADEMICS</small><strong>Khoa Công nghệ Thông tin</strong></span><span aria-hidden="true">↗</span></a></div></div>
     </section>
   </main>
 
@@ -115,12 +163,12 @@
     <section class="modal-frame" role="dialog" aria-modal="true" aria-labelledby="modal-heading" aria-describedby="modal-description">
       <aside class="modal-aside">
         <div class="modal-aside-top"><span class="modal-brand">H<span>✳</span></span><span>HCMUS GUIDE<br><small>AN OPEN CONVERSATION</small></span></div>
-        <div class="modal-aside-middle"><p class="section-tag light"><span></span> WELCOME TO YOUR NEXT STEP</p><h2 id="modal-heading">Bạn có<br><em>câu hỏi gì?</em></h2><p id="modal-description">Khám phá ngành học, phương thức tuyển sinh và cách chuẩn bị cho năm nhất qua những câu hỏi của chính bạn.</p><div class="modal-separator"></div><p class="quick-title">GỢI Ý BẮT ĐẦU</p><div class="modal-quick"><button type="button" data-question="HCMUS có những phương thức tuyển sinh nào năm 2026?">Tìm hiểu tuyển sinh <span aria-hidden="true">↗</span></button><button type="button" data-question="Em thích lập trình và toán, nên tìm hiểu ngành nào?">Khám phá ngành học <span aria-hidden="true">↗</span></button><button type="button" data-question="Em nên chuẩn bị gì trước năm nhất?">Chuẩn bị năm nhất <span aria-hidden="true">↗</span></button></div></div>
+        <div class="modal-aside-middle"><p class="section-tag light"><span></span> WELCOME TO YOUR NEXT STEP</p><h2 id="modal-heading">Bạn có<br><em>câu hỏi gì?</em></h2><p id="modal-description">Tra cứu thông tin tuyển sinh và khám phá ngành học. Để quản lý việc chuẩn bị hồ sơ, mở tính năng Checklist riêng trên trang chủ.</p><div class="modal-separator"></div><p class="quick-title">GỢI Ý BẮT ĐẦU</p><div class="modal-quick"><button type="button" data-question="HCMUS có những phương thức tuyển sinh nào năm 2026?">Tìm hiểu tuyển sinh <span aria-hidden="true">↗</span></button><button type="button" data-question="Em thích lập trình và toán, nên tìm hiểu ngành nào?">Khám phá ngành học <span aria-hidden="true">↗</span></button><button type="button" class="js-open-planner">Mở checklist <span aria-hidden="true">↗</span></button></div></div>
         <div class="aside-bottom"><span>✳</span> DỰ ÁN HỌC TẬP · KHÔNG PHẢI WEBSITE CHÍNH THỨC</div>
       </aside>
       <div class="modal-chat">
         <header class="modal-chat-header"><div class="chat-assistant-icon" aria-hidden="true">H<span>✳</span></div><div class="chat-headline"><strong>HCMUS Guide</strong><small>Admission & Study Assistant</small></div><span class="chat-mode" id="chat-mode">DEMO MODE</span><button type="button" class="close-modal" id="close-modal" aria-label="Đóng trò chuyện"><span aria-hidden="true">×</span></button></header>
-        <div class="chat-thread" id="messages" role="log" aria-label="Nội dung cuộc trò chuyện" aria-live="polite" aria-relevant="additions"><div class="msg bot"><span class="msg-label">HCMUS GUIDE</span><div class="msg-bubble">Chào bạn! 👋 Mình là HCMUS Guide. Bạn muốn tìm hiểu về tuyển sinh, ngành học hay cách chuẩn bị cho năm nhất?</div></div><div class="chat-welcome"><span>GỢI Ý DÀNH CHO BẠN</span><div class="welcome-prompts"><button type="button" data-question="Các phương thức tuyển sinh HCMUS năm 2026 là gì?">Phương thức tuyển sinh ↗</button><button type="button" data-question="Ngành nào xét tuyển tổ hợp A01 năm 2026?">Tổ hợp A01 ↗</button><button type="button" data-question="Em cần chuẩn bị gì trước năm nhất?">Chuẩn bị năm nhất ↗</button></div></div></div>
+        <div class="chat-thread" id="messages" role="log" aria-label="Nội dung cuộc trò chuyện" aria-live="polite" aria-relevant="additions"><div class="msg bot"><span class="msg-label">HCMUS GUIDE</span><div class="msg-bubble">Chào bạn! 👋 Mình là HCMUS Guide. Bạn muốn tra cứu tuyển sinh hay khám phá ngành học? Checklist hồ sơ nằm ở trang chủ.</div></div><div class="chat-welcome"><span>GỢI Ý DÀNH CHO BẠN</span><div class="welcome-prompts"><button type="button" data-question="Các phương thức tuyển sinh HCMUS năm 2026 là gì?">Phương thức tuyển sinh ↗</button><button type="button" data-question="Ngành nào xét tuyển tổ hợp A01 năm 2026?">Tổ hợp A01 ↗</button><button type="button" class="js-open-planner">Checklist của tôi ↗</button></div></div></div>
         <div class="chat-bottom"><div id="chat-status-text" class="chat-status-text" role="status">Bản demo: câu trả lời chưa truy xuất dữ liệu tuyển sinh hoặc AI thật.</div><form id="chat-form" class="composer"><label for="question" class="sr-only">Câu hỏi gửi đến HCMUS Guide</label><textarea id="question" rows="1" maxlength="1000" placeholder="Nhập câu hỏi của bạn về HCMUS…" required></textarea><button type="submit" id="send-button" aria-label="Gửi câu hỏi"><span aria-hidden="true">↑</span></button></form><div class="composer-foot"><span>ENTER ĐỂ GỬI · SHIFT + ENTER ĐỂ XUỐNG DÒNG</span><span id="character-count">0 / 1000</span></div></div>
       </div>
     </section>

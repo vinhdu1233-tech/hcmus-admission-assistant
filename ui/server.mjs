@@ -52,7 +52,7 @@ function demoResponse(message) {
     return {answer:'Mình đã nhận được câu hỏi về tuyển sinh hoặc ngành học. Hiện hệ thống đang ở DEMO MODE và chưa truy xuất cơ sở dữ liệu chính thức. Sau khi nối Backend, câu trả lời sẽ được kiểm chứng theo năm tuyển sinh và kèm nguồn phù hợp.',status:'insufficient_evidence',intent:'admission_lookup',sources:portal};
   }
   if (/năm nhất|ôn tập|học hiệu quả|chuẩn bị|kỹ năng/i.test(txt)) {
-    return {answer:'Để chuẩn bị cho năm nhất, bạn có thể hệ thống lại kiến thức nền tảng, luyện thói quen tự học và tìm hiểu trước chương trình ngành dự định theo học. Đây là gợi ý chung, không phải hướng dẫn học vụ chính thức của HCMUS.',status:'answered',intent:'study_guidance',sources:[]};
+    return {answer:'Tính năng 3 hiện là Application Checklist & Progress Tracker. Hãy mở mục Checklist trên trang chủ để chọn năm, phương thức xét tuyển và theo dõi tiến độ. Đây là chế độ demo, không phải hướng dẫn đăng ký chính thức.',status:'answered',intent:'application_guidance',sources:[]};
   }
   return {answer:'Xin chào! Đây là giao diện demo của HCMUS Guide. Mình đã nhận câu hỏi của bạn; chức năng trả lời dựa trên dữ liệu và AI thật sẽ được kết nối qua FastAPI của nhóm.',status:'answered',intent:'unknown',sources:[]};
 }
