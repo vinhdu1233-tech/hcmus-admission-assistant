@@ -97,7 +97,10 @@ def search_majors(year:int,combination:str|None=None,limit:int=15) -> list[dict]
 def all_majors(year:int) -> list[dict]:
     ensure_database()
     with connect() as db:
-        rows=db.execute('''SELECT m.code,m.name,m.tags_json,s.url as source_url,
+        rows=db.execute('''SELECT m.code,m.name,m.quota,m.tags_json,
+               (SELECT GROUP_CONCAT(c.combination, ', ') FROM major_combinations c
+                WHERE c.year=m.year AND c.major_code=m.code) AS combinations,
+               s.url as source_url,
                s.title as source_title FROM majors m JOIN sources s ON s.id=m.source_id
                WHERE m.year=? ORDER BY m.name''',(year,)).fetchall()
     return [dict(r) for r in rows]
