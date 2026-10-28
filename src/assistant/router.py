@@ -104,7 +104,7 @@ def route(message:str,year:int|None)->dict:
                 +(r['official_profile'] if r.get('official_profile') else
                   'Tên ngành và các từ khóa liên quan gợi ý đây có thể là lựa chọn để bạn tìm hiểu thêm.')
                 for r in chosen)
-            intro='Gợi ý từ dữ liệu truy xuất (AI tạm không khả dụng hoặc chưa cấu hình):'
+            intro='Gợi ý từ dữ liệu truy xuất (AI chưa cấu hình hoặc tạm không khả dụng):'
         sources=[]
         for row in chosen:
             urls=[(row['source_url'],row['source_title'])]
