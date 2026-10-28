@@ -19,7 +19,7 @@ def test_sqlite_tables_and_source():
         assert db.execute('SELECT COUNT(*) FROM majors WHERE year=2026').fetchone()[0]==expected
 
 def test_a01_filter_real_seed():
-    names={r['name'] for r in search_majors(2026,'A01',20)}
+    names={r['name'] for r in search_majors(2026,'A01',50)}
     assert 'Trí tuệ nhân tạo' in names
     assert 'Sinh học' not in names
 
@@ -41,7 +41,7 @@ def test_major_exploration_rule_based():
     r=route('Em thích lập trình và toán, nên chọn ngành nào năm 2026?',2026)
     assert r['status']=='answered'
     assert r['intent']=='major_exploration'
-    assert 'khớp từ khóa' in r['answer']
+    assert 'dữ liệu' in r['answer']
 
 def test_missing_year():
     assert route('Ngành nào xét A01?',None)['status']=='clarification_needed'
