@@ -242,6 +242,7 @@ class ConversationManager:
         result = route(original, effective_year, focus_query=selected_focus,
                        candidates_override=chosen_context)
         codes = tuple(result.pop("_recommended_codes", ()))
+        names = tuple(result.pop("_recommended_names", ()))
         prompt = result.pop("_followup_prompt", "")
         detected = detect_intent(original)
         resolved_year, year_problem = extract_year(original, effective_year)
@@ -262,8 +263,7 @@ class ConversationManager:
                 interest_seed=(interest_seed[:250] if selected_focus else
                                original[:250] if exploring else ""),
                 last_codes=codes if exploring else (),
-                last_names=tuple(r["name"] for r in chosen_context or [])[:3]
-                    if selected_focus else (),
+                last_names=names,
                 followup_prompt=prompt, updated_at=self.clock(),
             ))
         elif intent != "unknown" and not previous.pending_year:
