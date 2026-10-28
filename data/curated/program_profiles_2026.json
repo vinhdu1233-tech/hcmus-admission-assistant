@@ -1,0 +1,253 @@
+{
+  "year": 2026,
+  "source_scope": "2026 HCMUS admissions programs: 39 profile-level summaries, each grounded in school admissions pages or official HCMUS faculty descriptions. AI (7480107) has a documented code discrepancy on a separate school detail page; never silently rewrite admissions codes.",
+  "verified_on": "2026-10-29",
+  "profiles": [
+    {
+      "code": "7480101_TT",
+      "summary": "Chương trình tiên tiến Khoa học máy tính đào tạo kiến thức nền tảng và chuyên sâu về máy tính, khoa học máy tính, tập trung nghiên cứu, phân tích thuật toán và thiết kế, phát triển các giải pháp công nghệ thông tin. Trang giới thiệu chương trình ghi ngôn ngữ giảng dạy là tiếng Anh.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-khoa-hoc-may-tinh-chuong-trinh-tien-tien/",
+      "reviewed_on": "2026-10-28"
+    },
+    {
+      "code": "7480201_DKD",
+      "summary": "Chương trình Công nghệ thông tin tăng cường tiếng Anh giới thiệu các hướng học như công nghệ thông tin, hệ thống thông tin, khoa học máy tính, khoa học dữ liệu, kỹ thuật phần mềm, mạng máy tính và thị giác máy tính. Nội dung đề cập phân tích và quản trị dữ liệu, thiết kế và vận hành hệ thống thông tin.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-thong-tin-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-28"
+    },
+    {
+      "code": "7480201_NN",
+      "summary": "Nhóm ngành Máy tính và Công nghệ thông tin gồm các hướng Công nghệ thông tin, Hệ thống thông tin, Kỹ thuật phần mềm và Khoa học máy tính. Trang HCMUS giải thích Hệ thống thông tin gắn CNTT với quy trình quản lý tổ chức, còn Kỹ thuật phần mềm tập trung phát triển và vận hành sản phẩm phần mềm.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nhom-nganh-may-tinh-va-cong-nghe-thong-tin/",
+      "reviewed_on": "2026-10-28"
+    },
+    {
+      "code": "7460101_NN",
+      "summary": "Nhóm ngành Toán học, Toán ứng dụng và Toán tin có hai năm học phần cơ sở chung, sau đó sinh viên lựa chọn hướng chuyên ngành. Trang giới thiệu nêu Toán học thiên về các nền tảng lý thuyết, Toán ứng dụng giải quyết vấn đề từ các lĩnh vực khác và Toán tin kết hợp công cụ toán học với tin học.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nhom-nganh-toan-hoc-toan-ung-dung-toan-tin/",
+      "reviewed_on": "2026-10-28"
+    },
+    {
+      "code": "7460108_NN",
+      "summary": "Nhóm ngành Khoa học dữ liệu và Thống kê kết hợp kiến thức toán học, thống kê và phương pháp phân tích dữ liệu. Trang giới thiệu ngành trên cổng tuyển sinh HCMUS cung cấp thông tin riêng về các hướng đào tạo trong nhóm, giúp người học so sánh hai lựa chọn.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nhom-nganh-khoa-hoc-du-lieu-thong-ke/",
+      "reviewed_on": "2026-10-28"
+    },
+    {
+      "code": "7420101",
+      "summary": "Sinh học nghiên cứu sự sống, từ sinh lý và di truyền đến vi sinh vật, sinh thái và bảo tồn đa dạng sinh học. Trang chương trình giới thiệu các định hướng sinh học động vật, thực vật, sinh hóa, vi sinh và di truyền–sinh học phân tử.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-sinh-hoc/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7420101_DKD",
+      "summary": "Chương trình Sinh học tăng cường tiếng Anh định hướng nghiên cứu, phát triển trên nền tảng chương trình Sinh học và tăng thời lượng học phần bằng tiếng Anh. Các hướng chuyên sâu gồm vi sinh, sinh hóa, sinh học động thực vật, di truyền và sinh thái.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-sinh-hoc-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7420201",
+      "summary": "Công nghệ sinh học kết hợp kiến thức về sinh vật và kỹ thuật để thực hiện thí nghiệm và phát triển ứng dụng. HCMUS giới thiệu các định hướng công nghệ sinh học công nghiệp, nông nghiệp, y dược và vật liệu sinh học.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-sinh-hoc/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7420201_DKD",
+      "summary": "Chương trình Công nghệ sinh học tăng cường tiếng Anh bổ sung môi trường học tập và thực hành ngoại ngữ trên nền tảng công nghệ sinh học. Trang trường nêu các hướng công nghiệp, nông nghiệp, y dược và vật liệu sinh học cùng hoạt động thực tập.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-sinh-hoc-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440102_DKD",
+      "summary": "Vật lý học tăng cường tiếng Anh giới thiệu các hướng nghiên cứu từ vật lý hạt nhân, địa cầu, chất rắn đến vật lý tin học, điện tử và ứng dụng. Nội dung mô tả bao gồm nghiên cứu nguyên lý vật lý và các ứng dụng về cảm biến, tín hiệu, linh kiện và công nghệ.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-vat-ly-hoc-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440102_NN",
+      "summary": "Nhóm xét tuyển Vật lý học và Công nghệ vật lý điện tử–tin học gồm các hướng như vật lý hạt nhân, địa cầu, chất rắn, vật lý ứng dụng và các lĩnh vực điện tử, nhúng, robot, xử lý tín hiệu. Trang trường trình bày hai chương trình đào tạo trong cùng nhóm xét tuyển.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nhom-nganh-vat-ly-hoc-cong-nghe-vat-ly-dien-tu-va-tin-hoc-cong-nghe-ban-dan/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440107_DKD",
+      "summary": "Chương trình Công nghệ vật lý điện tử và tin học tăng cường tiếng Anh giới thiệu hướng vật lý linh kiện với vật liệu nano, quang điện tử, cảm biến, và hướng kỹ thuật điện tử–máy tính–robot với hệ thống nhúng, IoT và tự động hóa.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-vat-ly-dien-tu-va-tin-hoc-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440112",
+      "summary": "Ngành Hóa học có các lĩnh vực chuyên sâu như hóa hữu cơ, hóa vô cơ ứng dụng, hóa polyme, hóa lý, hóa phân tích và hóa dược. Chương trình tập trung nghiên cứu tính chất, phản ứng và phân tích các chất hóa học trong các hướng ứng dụng.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-hoa-hoc/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440112_DKD",
+      "summary": "Hóa học tăng cường tiếng Anh có các hướng chuyên sâu về hóa hữu cơ, vô cơ, polyme, hóa lý, phân tích và hóa dược; trang giới thiệu nêu các nội dung nghiên cứu, phân tích hợp chất và ứng dụng của hóa học. Đây là biến thể chương trình tăng cường tiếng Anh.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-hoa-hoc-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440122",
+      "summary": "Khoa học vật liệu liên kết vật lý, hóa học và công nghệ để nghiên cứu cấu trúc, tính chất, chế tạo và đánh giá vật liệu. Trang trường nêu các lĩnh vực vật liệu màng mỏng, polymer–composite, vật liệu từ và vật liệu y sinh.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-khoa-hoc-vat-lieu/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440122_DKD",
+      "summary": "Khoa học vật liệu tăng cường tiếng Anh nghiên cứu cấu trúc và tính chất vật liệu, gồm màng mỏng, polymer–composite, vật liệu từ, vật liệu y sinh và vật liệu nano. Trang trường trình bày các ứng dụng liên quan điện tử, môi trường và y sinh.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-khoa-hoc-vat-lieu-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440201_NN",
+      "summary": "Nhóm ngành Địa chất học và Kinh tế đất đai gồm hướng nghiên cứu khoáng sản, địa chất biển, dầu khí, địa chất công trình và môi trường; hướng Kinh tế đất đai kết hợp khoa học Trái đất với kinh tế, quản lý và pháp luật về đất đai.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nhom-nganh-dia-chat-hoc-kinh-te-dat-dai/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440228",
+      "summary": "Hải dương học nghiên cứu các quá trình tự nhiên của biển, đại dương và tương tác với khí quyển, lục địa. Trang trường giới thiệu các định hướng hải dương học, khí tượng học, thủy văn và hoạt động quan trắc, phân tích, dự báo.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-hai-duong-hoc/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440228_DKD",
+      "summary": "Hải dương học tăng cường tiếng Anh tập trung vào khoa học biển, khí quyển và thủy văn; sinh viên tiếp cận khảo sát và phân tích các quá trình biển, thời tiết, khí hậu. Trang chương trình còn đề cập ứng dụng viễn thám và công nghệ số trong nghiên cứu.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-hai-duong-hoc-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440301",
+      "summary": "Khoa học môi trường trang bị kiến thức đánh giá và phân tích các vấn đề môi trường qua quan trắc, thực hành và nghiên cứu. Các hướng HCMUS giới thiệu gồm môi trường và phát triển bền vững, tài nguyên–môi trường, môi trường biển và đới bờ.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-khoa-hoc-moi-truong/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7440301_DKD",
+      "summary": "Khoa học môi trường tăng cường tiếng Anh kết hợp nghiên cứu khoa học và quản lý môi trường với việc sử dụng tiếng Anh chuyên ngành. Các hướng gồm môi trường và phát triển bền vững, tài nguyên–môi trường và môi trường biển, đới bờ.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-khoa-hoc-moi-truong-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7510401_DKD",
+      "summary": "Công nghệ kỹ thuật hóa học tăng cường tiếng Anh có các hướng công nghệ hóa hữu cơ và hóa dược, công nghệ hóa polyme, hóa vô cơ và vật liệu chuyển hóa năng lượng. Chương trình tiếp cận kỹ thuật, quy trình và ứng dụng trong lĩnh vực hóa học.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-ky-thuat-hoa-hoc-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7510402",
+      "summary": "Công nghệ vật liệu định hướng ứng dụng, nghiên cứu và công nghệ sản xuất vật liệu. Các chuyên ngành trên trang HCMUS gồm polymer–composite, vật liệu y sinh, vật liệu bán dẫn và vật liệu năng lượng tái tạo.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-vat-lieu/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7510402_DKD",
+      "summary": "Công nghệ vật liệu tăng cường tiếng Anh nhấn mạnh ứng dụng, sản xuất và các quy trình vật liệu như polymer–composite, y sinh, bán dẫn và năng lượng tái tạo. Chương trình rèn đọc tài liệu kỹ thuật, báo cáo thí nghiệm và thuật ngữ chuyên ngành bằng tiếng Anh.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-vat-lieu-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7510406",
+      "summary": "Công nghệ kỹ thuật môi trường tập trung thiết kế, vận hành và đánh giá công nghệ xử lý ô nhiễm nước, không khí, đất, chất thải rắn bằng các quá trình vật lý, hóa học và sinh học. Trang trường đề cập thực hành phòng thí nghiệm và nội dung tái chế, kiểm soát phát thải.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-ky-thuat-moi-truong/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7520207",
+      "summary": "Kỹ thuật điện tử–viễn thông đào tạo nền tảng điện tử, vi mạch, kỹ thuật máy tính, hệ thống nhúng và viễn thông. Các hướng chuyên ngành gồm điện tử, máy tính–hệ thống nhúng và truyền thông, với ứng dụng xử lý tín hiệu, công nghệ mạng và IoT.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-ky-thuat-dien-tu-vien-thong/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "75202a1",
+      "summary": "Thiết kế vi mạch đi sâu vào thiết kế mạch tích hợp số, tương tự, tín hiệu hỗn hợp, hệ thống trên chip và công cụ thiết kế vi mạch. Trang giới thiệu nhấn mạnh thực hành thiết kế và các công đoạn đóng gói, kiểm thử.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-thiet-ke-vi-mach/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7520207_DKD",
+      "summary": "Kỹ thuật điện tử–viễn thông tăng cường tiếng Anh phát triển từ chương trình chuẩn, với các nội dung về thiết kế vi mạch, hệ thống nhúng, viễn thông 4G/5G, mạng, xử lý tín hiệu và IoT; đồng thời tăng cường năng lực ngoại ngữ chuyên ngành.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-ky-thuat-dien-tu-vien-thong-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7520402",
+      "summary": "Kỹ thuật hạt nhân gồm hai hướng năng lượng–điện hạt nhân và kỹ thuật hạt nhân. Nội dung giới thiệu đề cập tính toán mô phỏng, an toàn lò phản ứng, chu trình nhiên liệu và các ứng dụng kỹ thuật hạt nhân trong công nghiệp, nông nghiệp, môi trường.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-ky-thuat-hat-nhan/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7520403",
+      "summary": "Vật lý y khoa ứng dụng nguyên lý và kỹ thuật vật lý vào y học, đặc biệt trong xạ trị, y học hạt nhân, chẩn đoán và xử lý hình ảnh y khoa, bảo đảm an toàn bức xạ.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-vat-ly-y-khoa/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7520403_DKD",
+      "summary": "Vật lý y khoa tăng cường tiếng Anh kết hợp nền tảng vật lý, kiến thức y học cơ bản và thiết bị y tế; trang giới thiệu nhấn mạnh các ứng dụng xạ trị, y học hạt nhân, chẩn đoán hình ảnh và an toàn bức xạ trong môi trường hội nhập.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-vat-ly-y-khoa-chuong-trinh-tang-cuong-tieng-anh/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7520501",
+      "summary": "Kỹ thuật địa chất nghiên cứu đặc tính đất đá và các yếu tố địa chất phục vụ khảo sát, thiết kế công trình, đánh giá nền móng, thăm dò khoáng sản và quản lý tài nguyên thiên nhiên. Trang trường nêu các hướng địa kỹ thuật, địa chất thủy văn và thăm dò khoáng sản.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-ky-thuat-dia-chat/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7850101",
+      "summary": "Quản lý tài nguyên và môi trường kết hợp khoa học tự nhiên, quản lý và công nghệ để nghiên cứu quy hoạch, sử dụng bền vững tài nguyên đất, nước, rừng, khoáng sản và biển đảo. Chương trình đề cập quản trị môi trường, pháp luật và chính sách phát triển bền vững.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-quan-ly-tai-nguyen-va-moi-truong/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7140103",
+      "summary": "Công nghệ giáo dục kết hợp khoa học giáo dục và công nghệ thông tin để thiết kế, phát triển giải pháp hỗ trợ dạy và học. Chương trình giới thiệu ứng dụng e-learning, nội dung học tập số và công nghệ giáo dục trong các môi trường giảng dạy, đào tạo.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-cong-nghe-giao-duc/",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "74401a1",
+      "summary": "Công nghệ bán dẫn tại HCMUS kết hợp kiến thức vật lý, hóa học, khoa học vật liệu, điện tử và khoa học máy tính để nghiên cứu, phát triển công nghệ vi mạch bán dẫn. Trang Khoa Vật lý–Vật lý kỹ thuật xác nhận mã xét tuyển 74401a1 và mô tả các mục tiêu đào tạo liên ngành.",
+      "source_url": "https://phys.hcmus.edu.vn/vi/nganh-hoc/cong-nghe-ban-dan-thiet-ke-vi-mach",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7460112_DKD",
+      "summary": "Chương trình Toán ứng dụng tăng cường tiếng Anh tập trung vận dụng toán học và tính toán vào mô hình hóa, mô phỏng, tối ưu và giải quyết các vấn đề thực tiễn, bao gồm các hướng tài chính định lượng và khoa học tính toán. Khoa Toán–Tin học xác nhận mã 7460112_DKD trên trang chương trình.",
+      "source_url": "https://www.math.hcmus.edu.vn/dao-tao-dai-hoc/chuong-trinh-tcta/nganh-toan-ung-dung",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7460117_DKD",
+      "summary": "Chương trình Toán tin tăng cường tiếng Anh kết hợp nền tảng toán học, khoa học tính toán và khoa học máy tính, với định hướng lập trình, thuật toán và xử lý dữ liệu. Trang Khoa Toán–Tin học nêu các hướng phương pháp toán trong tin học, toán tin ứng dụng và khoa học dữ liệu cho mã 7460117_DKD.",
+      "source_url": "https://math.hcmus.edu.vn/dao-tao-dai-hoc/chuong-trinh-tcta/nganh-toan-tin",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7460108_DKD",
+      "summary": "Chương trình Khoa học dữ liệu tăng cường tiếng Anh kết hợp toán học, xác suất, thống kê, máy học và trí tuệ nhân tạo để thu thập, phân tích dữ liệu và xây dựng mô hình thông minh. Khoa Toán–Tin học công bố trang chương trình mang mã 7460108_DKD.",
+      "source_url": "https://math.hcmus.edu.vn/dao-tao-dai-hoc/chuong-trinh-tcta/nganh-khoa-hoc-du-lieu",
+      "reviewed_on": "2026-10-29"
+    },
+    {
+      "code": "7480107",
+      "summary": "Ngành Trí tuệ nhân tạo được giới thiệu trên cổng HCMUS với các lĩnh vực cốt lõi gồm học máy, xử lý ngôn ngữ tự nhiên và thị giác máy tính, kết hợp lý thuyết và thực hành. Mã xét tuyển 2026 được công bố là 7480107 và trùng mã trong quyết định mở ngành thí điểm; trang giới thiệu chi tiết khác của trường có mã không nhất quán và cần lưu ý khi đối chiếu.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-moi/",
+      "reviewed_on": "2026-10-29",
+      "source_note": "2026 admissions + 2021 pilot approval use code 7480107; detailed page https://tuyensinh.hcmus.edu.vn/nganh-tri-tue-nhan-tao/ prints 7480207. We only use the broader official 'nganh-moi' overview for this summary."
+    }
+  ],
+  "review_flags": [
+    {
+      "code": "7480107",
+      "name": "Trí tuệ nhân tạo",
+      "status": "source_discrepancy_documented",
+      "reason": "2026 admissions table and 2021 official pilot-approval decision both use 7480107; the separate detailed-profile page still prints 7480207. The summary is grounded only in the school 'nganh-moi' overview and does not change the official 2026 admission code.",
+      "source_url": "https://tuyensinh.hcmus.edu.vn/nganh-tri-tue-nhan-tao/",
+      "alternative_source_url": "https://tuyensinh.hcmus.edu.vn/2026-thong-tin-tuyen-sinh/",
+      "decision_url": "https://tuyensinh.hcmus.edu.vn/wp-content/uploads/2025/09/QD947_QD-mo-nganh-Tri-tue-nhan-tao.pdf"
+    }
+  ]
+}

@@ -81,6 +81,31 @@ a{color:inherit;text-decoration:none}img{max-width:100%;display:block}figure{mar
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal{opacity:1;transform:none;transition:none}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
 
+/* Production UX: new conversation, clear retry action, accessible focus. */
+.new-chat-button{
+  border:1px solid #bdd7e8;border-radius:999px;background:#f1f9fe;
+  color:#285d83;font:700 10px var(--sans);letter-spacing:.05em;
+  padding:10px 13px;white-space:nowrap;cursor:pointer;
+}
+.new-chat-button:hover{background:#dfeffc}
+.new-chat-button:disabled,.chat-retry:disabled{opacity:.55;cursor:wait}
+.chat-retry{
+  align-self:flex-start;border:1px solid #aac9df;border-radius:12px;
+  background:#fff;color:#245a82;padding:9px 13px;font:700 11px var(--sans);
+  cursor:pointer;
+}
+.chat-retry:hover{background:#e8f3fb}
+.new-chat-button:focus-visible,.chat-retry:focus-visible,.close-modal:focus-visible,
+.js-open-chat:focus-visible,.composer button:focus-visible{
+  outline:3px solid #4a8ab9;outline-offset:3px;
+}
+@media(max-width:700px){
+  .new-chat-button{font-size:15px;min-width:41px;height:41px;padding:6px 10px}
+  .new-chat-button span{display:none}
+  .modal-chat-header{padding-right:64px}
+  .chat-headline{min-width:0}
+}
+
 /* FEATURE 3 — Admission checklist and progress tracker (replaces old study guidance). */
 .planner{background:linear-gradient(135deg,#edf6fc 0%,#fbfdff 65%,#e5f2fb 100%);position:relative;isolation:isolate}
 .planner::before{content:'03';font:400 clamp(150px,20vw,340px)/1 var(--serif);position:absolute;right:3%;top:-15px;color:#b7daf225;pointer-events:none;z-index:-1}

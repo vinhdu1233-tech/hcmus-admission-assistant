@@ -4,6 +4,7 @@
  * This proxy avoids frontend/backend cross-origin issues during development.
  */
 import http from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,8 +25,8 @@ const CONTENT_TYPES = {
   '.json': 'application/json; charset=utf-8',
 };
 
-function json(res, status, value) {
-  res.writeHead(status, {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store'});
+function json(res, status, value, extraHeaders={}) {
+  res.writeHead(status, {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extraHeaders});
   res.end(JSON.stringify(value));
 }
 function safeError(code, message) {
@@ -51,10 +52,20 @@ function demoResponse(message) {
   if (/a01|tổ hợp|học phí|phương thức|tuyển sinh|ngành|xét tuyển/i.test(txt)) {
     return {answer:'Mình đã nhận được câu hỏi về tuyển sinh hoặc ngành học. Hiện hệ thống đang ở DEMO MODE và chưa truy xuất cơ sở dữ liệu chính thức. Sau khi nối Backend, câu trả lời sẽ được kiểm chứng theo năm tuyển sinh và kèm nguồn phù hợp.',status:'insufficient_evidence',intent:'admission_lookup',sources:portal};
   }
-  if (/năm nhất|ôn tập|học hiệu quả|chuẩn bị|kỹ năng/i.test(txt)) {
-    return {answer:'Tính năng 3 hiện là Application Checklist & Progress Tracker. Hãy mở mục Checklist trên trang chủ để chọn năm, phương thức xét tuyển và theo dõi tiến độ. Đây là chế độ demo, không phải hướng dẫn đăng ký chính thức.',status:'answered',intent:'application_guidance',sources:[]};
+  if (/checklist|hồ sơ|tiến độ/i.test(txt)) {
+    return {answer:'Checklist hồ sơ nằm trên trang chủ. Bạn có thể chọn năm 2025/2026, phương thức, đánh dấu công việc và lưu tiến độ trong trình duyệt. Đây là hướng dẫn kế hoạch cá nhân, không thay thế thông báo HCMUS.',status:'answered',intent:'study_guidance',sources:[]};
   }
   return {answer:'Xin chào! Đây là giao diện demo của HCMUS Guide. Mình đã nhận câu hỏi của bạn; chức năng trả lời dựa trên dữ liệu và AI thật sẽ được kết nối qua FastAPI của nhóm.',status:'answered',intent:'unknown',sources:[]};
+}
+
+// HttpOnly browser-session cookie: each browser gets its own opaque UUID.
+ // No frontend JS edits needed: the server forwards the UUID to FastAPI.
+function conversationSession(req) {
+  const cookie=String(req.headers.cookie || '');
+  const match=/(?:^|;\s*)hcmus_sid=([0-9a-f-]{36})(?:;|$)/.exec(cookie);
+  const valid=match && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(match[1]);
+  const id=valid ? match[1] : randomUUID();
+  return {id, headers:valid?{}:{'Set-Cookie':`hcmus_sid=${id}; Path=/; HttpOnly; SameSite=Lax`}};
 }
 
 async function handleChat(req, res) {
@@ -68,19 +79,41 @@ async function handleChat(req, res) {
   if (year !== undefined && year !== null && (!Number.isInteger(year) || year < 2000 || year > 2100)) {
     return json(res,400,safeError('INVALID_YEAR','Năm tuyển sinh không hợp lệ.'));
   }
-  if (MODE === 'demo') return json(res,200,demoResponse(msg));
+  const session=conversationSession(req);
+  if (MODE === 'demo') return json(res,200,demoResponse(msg),session.headers);
+  // Never trust caller-supplied session IDs; the HttpOnly cookie owns session identity.
+  body.conversation_id=session.id;
   try {
     const upstream = await fetch(new URL('/chat',API_ORIGIN), {
-      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(12000),
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(130000),
     });
     const text = await upstream.text();
     let data;
     try { data = JSON.parse(text); } catch {throw new Error('NON_JSON_RESPONSE');}
     if (typeof data !== 'object' || data === null) throw new Error('INVALID_RESPONSE');
-    return json(res, upstream.status >= 200 && upstream.status < 600 ? upstream.status : 502, data);
+    return json(res, upstream.status >= 200 && upstream.status < 600 ? upstream.status : 502, data,session.headers);
   } catch (e) {
     console.error('[HCMUS Guide] Backend request failed:',e.name || 'Error');
-    return json(res,503,safeError('BACKEND_UNAVAILABLE','Chưa kết nối được Backend FastAPI. Hãy kiểm tra dịch vụ hoặc chuyển về demo mode.'));
+    return json(res,503,safeError('BACKEND_UNAVAILABLE','Chưa kết nối được Backend FastAPI. Hãy kiểm tra dịch vụ hoặc chuyển về demo mode.'),session.headers);
+  }
+}
+
+// Explicitly reset the context for the current browser only.
+// The same HttpOnly session ID is forwarded to FastAPI's existing reset action.
+async function handleConversationReset(req,res) {
+  const session=conversationSession(req);
+  if (MODE === 'demo') return json(res,200,{ok:true},session.headers);
+  try {
+    const upstream=await fetch(new URL('/chat',API_ORIGIN),{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:'bắt đầu lại',conversation_id:session.id}),
+      signal:AbortSignal.timeout(10000),
+    });
+    if (!upstream.ok) throw new Error('RESET_UPSTREAM_FAILED');
+    return json(res,200,{ok:true},session.headers);
+  } catch {
+    return json(res,503,{ok:false,message:'Không thể bắt đầu hội thoại mới. Hãy kiểm tra FastAPI.'},session.headers);
   }
 }
 
@@ -88,6 +121,7 @@ const server = http.createServer(async (req,res) => {
   const url = new URL(req.url || '/',`http://localhost:${PORT}`);
   if (url.pathname === '/api/config' && req.method === 'GET') return json(res,200,{mode:MODE,version:'1.0.0'});
   if (url.pathname === '/api/chat' && req.method === 'POST') return handleChat(req,res);
+  if (url.pathname === '/api/conversation/reset' && req.method === 'POST') return handleConversationReset(req,res);
   if (url.pathname.startsWith('/api/')) return json(res,404,safeError('NOT_FOUND','Không tìm thấy API.'));
   if (req.method !== 'GET' && req.method !== 'HEAD') return json(res,405,safeError('METHOD_NOT_ALLOWED','Phương thức không hỗ trợ.'));
   if (url.pathname === '/ui' || url.pathname === '/ui/') {
