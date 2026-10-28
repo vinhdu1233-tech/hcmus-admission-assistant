@@ -151,3 +151,82 @@ def test_gemini_invalid_code_falls_back_without_network(monkeypatch):
     monkeypatch.setenv("AI_PROVIDER", "gemini")
     monkeypatch.setenv("GEMINI_API_KEY", "mock-gemini-only")
     assert explain_with_ai("Em thích lập trình", candidates) is None
+
+
+def test_ollama_local_structured_output_without_network(monkeypatch):
+    """Mock the local HTTP server: model can only recommend retrieved codes."""
+    from urllib import request
+    candidates = retrieve_majors("Em thích lập trình năm 2026?", 2026, 5)
+    target = candidates[0]["code"]
+    called = []
+
+    class FakeResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def read(self, length):
+            return json.dumps({
+                "response": json.dumps({"recommendations": [{
+                    "code": target,
+                    "reason": "Bạn quan tâm lập trình và ngành này có từ khóa đó trong dữ liệu."
+                }]}, ensure_ascii=False)
+            }, ensure_ascii=False).encode("utf-8")
+
+    def fake_urlopen(req, timeout):
+        assert req.full_url == "http://127.0.0.1:11434/api/generate"
+        body = json.loads(req.data)
+        assert body["model"] == "qwen3:4b"
+        assert body["stream"] is False and body["think"] is False
+        assert target in body["format"]["properties"]["recommendations"]["items"]["properties"]["code"]["enum"]
+        called.append(body)
+        return FakeResponse()
+
+    monkeypatch.setattr(request, "urlopen", fake_urlopen)
+    monkeypatch.setenv("AI_PROVIDER", "ollama")
+    monkeypatch.setenv("OLLAMA_MODEL", "qwen3:4b")
+    result = explain_with_ai("Em thích lập trình", candidates)
+    assert result and target in result
+    assert len(called) == 1
+
+
+def test_ollama_unknown_major_falls_back(monkeypatch):
+    from urllib import request
+    candidates = retrieve_majors("Em thích lập trình năm 2026?", 2026, 5)
+
+    class FakeResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            pass
+
+        def read(self, length):
+            return json.dumps({
+                "response": json.dumps({"recommendations": [{
+                    "code": "FAKE_MAJOR",
+                    "reason": "Đây là một ngành không có trong database."
+                }]})
+            }).encode("utf-8")
+
+    monkeypatch.setattr(request, "urlopen", lambda req, timeout: FakeResponse())
+    monkeypatch.setenv("AI_PROVIDER", "ollama")
+    assert explain_with_ai("Em thích lập trình", candidates) is None
+
+
+def test_ollama_unavailable_returns_retrieval_fallback(monkeypatch):
+    from urllib import error, request
+
+    def offline(req, timeout):
+        raise error.URLError("offline")
+
+    monkeypatch.setattr(request, "urlopen", offline)
+    monkeypatch.setenv("AI_PROVIDER", "ollama")
+    candidates = retrieve_majors("Em thích lập trình năm 2026?", 2026, 5)
+    assert explain_with_ai("Em thích lập trình", candidates) is None
