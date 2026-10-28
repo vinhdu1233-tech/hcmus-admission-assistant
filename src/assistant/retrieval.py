@@ -1,7 +1,7 @@
 """Local, source-aware lexical retrieval over 2026 HCMUS admissions records.
 
-This is retrieval over verified program names/codes and editorial keyword tags,
-not a claim to have ingested full official curriculum descriptions or embeddings.
+This is retrieval over program names, editorial tags and any manually verified
+HCMUS program-profile summaries. Profiles are incomplete; no embeddings.
 Requires SQLite only; runs without an AI provider or API key.
 """
 from __future__ import annotations
@@ -81,7 +81,12 @@ def retrieve_majors(question: str, year: int, limit: int = 5) -> list[dict]:
         tags = json.loads(row["tags_json"])
         # Repetition is intentional: a program name is stronger evidence than
         # editor-generated tags; tags are only hints, not official curriculum.
-        document = tokens((row["name"] + " ") * 3 + (" ".join(tags) + " ") * 2)
+        official = row.get("official_profile") or ""
+        document = tokens(
+            (row["name"] + " ") * 3
+            + (" ".join(tags) + " ") * 2
+            + official
+        )
         documents.append(Counter(document))
 
     length = [sum(d.values()) or 1 for d in documents]
