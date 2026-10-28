@@ -29,6 +29,16 @@ def run(command: list[str], env: dict[str, str]) -> bool:
 
 
 def main() -> int:
+    if sys.version_info < (3, 10):
+        print(
+            f"ERROR: Python {sys.version.split()[0]} is unsupported. "
+            "Use Python 3.10+ (recommended 3.13). "
+            "macOS system python3 may be 3.9. "
+            "Create your virtual environment with: python3.13 -m venv .venv",
+            file=sys.stderr,
+        )
+        return 2
+
     env = {**os.environ, "AI_PROVIDER": "none", "OPENAI_API_KEY": "",
            "GEMINI_API_KEY": ""}
     print("HCMUS MVP checks — real paid/cloud API calls disabled")
