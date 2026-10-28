@@ -7,6 +7,7 @@ import json
 import os
 import sqlite3
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DB = ROOT / 'data' / 'processed' / 'hcmus.sqlite3'
@@ -42,6 +43,20 @@ CREATE TABLE IF NOT EXISTS program_profiles (
 );
 CREATE INDEX IF NOT EXISTS idx_combinations_year_code ON major_combinations(year, combination);
 """
+
+
+def official_hcmus_url(url: str) -> bool:
+    """Only HTTPS on the genuine HCMUS domain or its subdomains."""
+    try:
+        parts = urlsplit(url)
+    except (TypeError, ValueError):
+        return False
+    hostname = (parts.hostname or "").lower()
+    return (parts.scheme == "https"
+            and (hostname == "hcmus.edu.vn" or hostname.endswith(".hcmus.edu.vn"))
+            and parts.username is None and parts.password is None
+            and parts.port in (None, 443)
+            and not any(char in str(url) for char in ("\\n", "\\r")))
 
 
 def database_path() -> Path:
@@ -84,7 +99,7 @@ def initialize_database(path: Path | None = None, seed_path: Path | None = None)
             codes = [profile['code'] for profile in items]
             if len(codes) != len(set(codes)) or not set(codes).issubset(known_codes):
                 raise ValueError('Duplicate or unknown verified program profile code')
-            if any(not str(p['source_url']).startswith('https://tuyensinh.hcmus.edu.vn/')
+            if any(not official_hcmus_url(p.get('source_url'))
                    or not p.get('reviewed_on') or not p.get('summary')
                    for p in items):
                 raise ValueError('Program profiles require official HCMUS URLs and manual review')
