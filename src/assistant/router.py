@@ -8,6 +8,7 @@ import unicodedata
 from src.database.db import search_majors, all_majors, get_methods, count_majors
 
 PORTAL = 'https://tuyensinh.hcmus.edu.vn/'
+PUBLISHED_2026_PROGRAM_COUNT = 39
 COMBINATIONS = ('A00','A01','A02','A03','A04','A07','B00','B03','B08','C01','C02','C04',
                 'D01','D07','D10','X06','X10','X11','X12','X14','X15','X16','X26')
 INTEREST_GROUPS = {
@@ -41,6 +42,16 @@ def detect_intent(message:str)->str:
 
 def response(answer:str,intent:str,status:str='answered',sources:list|None=None)->dict:
     return {'answer':answer,'intent':intent,'status':status,'sources':sources or []}
+
+def coverage_note(year:int)->str:
+    """Describe actual SQLite coverage, never a hard-coded 13/39."""
+    loaded=count_majors(year)
+    target=PUBLISHED_2026_PROGRAM_COUNT
+    if loaded < target:
+        return f'Database hiện có {loaded}/{target} ngành/nhóm ngành năm {year}. Danh sách chưa đầy đủ.'
+    if loaded == target:
+        return f'Database hiện có {loaded}/{target} ngành/nhóm ngành năm {year} theo bộ dữ liệu đã nhập.'
+    return f'Database có {loaded} bản ghi, vượt {target} ngành/nhóm ngành công bố; cần kiểm tra dữ liệu trùng hoặc sai phạm vi.'
 
 def extract_year(message:str,request_year:int|None)->tuple[int|None,str|None]:
     matches={int(x) for x in re.findall(r'(?<!\d)20\d{2}(?!\d)',message)}
@@ -87,15 +98,15 @@ def route(message:str,year:int|None)->dict:
         choices=[r for _,r in ranked[:5]]
         if not choices:return response('Chưa đủ dữ liệu về ngành phù hợp trong bộ mẫu đã được xác minh.',intent,'insufficient_evidence')
         names='\n'.join(f"• {r['name']} ({r['code']})" for r in choices)
-        return response('Gợi ý để bạn tìm hiểu thêm, dựa trên khớp từ khóa sở thích với nhóm ngành trong dữ liệu mẫu (không phải kết quả AI hoặc đánh giá năng lực cá nhân):\n'+names+'\nNhóm đang có dữ liệu mẫu 13/39 ngành/nhóm ngành năm 2026.',intent,sources=[{'title':choices[0]['source_title'],'url':choices[0]['source_url'],'admission_year':2026}])
+        return response('Gợi ý để bạn tìm hiểu thêm, dựa trên khớp từ khóa sở thích với nhóm ngành trong database (không phải kết quả AI hoặc đánh giá năng lực cá nhân):\n'+names+'\n'+coverage_note(y),intent,sources=[{'title':choices[0]['source_title'],'url':choices[0]['source_url'],'admission_year':2026}])
     if intent in ('major_filter','admission_lookup'):
         found=[c for c in COMBINATIONS if re.search(r'(?<![A-Z0-9])'+c+r'(?![A-Z0-9])',message.upper())]
         if len(found)>1:return response('Bạn muốn tìm theo tổ hợp nào? Vui lòng nhập một mã tổ hợp (ví dụ A01).',intent,'clarification_needed')
         combination=found[0] if found else None
-        rows=search_majors(y,combination,limit=20)
+        rows=search_majors(y,combination,limit=50)
         if not rows:
             return response('Không tìm thấy kết quả trong bộ dữ liệu MVP hiện tại. Điều này KHÔNG có nghĩa là HCMUS không tuyển ngành đó.',intent,'insufficient_evidence')
         lines='\n'.join(f"• {r['name']} ({r['code']})" for r in rows)
         prefix=f'Các ngành/nhóm ngành được ghi nhận có tổ hợp {combination} năm 2026' if combination else 'Các ngành/nhóm ngành trong bộ dữ liệu MVP năm 2026'
-        return response(f'{prefix}:\n{lines}\nHiện database chỉ bao phủ {count_majors(y)}/39 ngành/nhóm ngành đã công bố. Danh sách trên KHÔNG đầy đủ.',intent,sources=[{'title':rows[0]['source_title'],'url':rows[0]['source_url'],'admission_year':2026}])
+        return response(f'{prefix}:\n{lines}\n{coverage_note(y)}',intent,sources=[{'title':rows[0]['source_title'],'url':rows[0]['source_url'],'admission_year':2026}])
     return response('Bạn có thể hỏi về tổ hợp A01 năm 2026, phương thức tuyển sinh 2026 hoặc sở thích ngành học.',intent,'clarification_needed')
