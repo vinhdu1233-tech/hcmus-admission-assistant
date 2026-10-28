@@ -15,6 +15,8 @@ from typing import Callable
 
 from src.assistant.router import detect_intent, extract_year, route
 from src.assistant.retrieval import retrieve_majors
+from src.assistant.dialogue import (Decision, contextual_major_search, decide_rules,
+                                    decide_ollama, program_response)
 
 YEAR_REQUIRED = frozenset({
     "major_filter", "admission_lookup", "admission_methods",
@@ -109,6 +111,9 @@ class Context:
     pending_year: bool = False
     awaiting_interest: bool = False
     interest_seed: str = ""
+    last_codes: tuple[str, ...] = ()
+    last_names: tuple[str, ...] = ()
+    followup_prompt: str = ""
     updated_at: float = 0.0
 
 
@@ -143,9 +148,9 @@ class ConversationManager:
 
     def answer(self, message: str, year: int | None,
                session_id: str | None) -> dict:
-        """Route each turn using prior context only from the same session."""
+        """Keep only the active question and a bounded shortlist per browser."""
         if session_id is None:
-            return route(message, year)  # Backward-compatible stateless clients.
+            return route(message, year)  # Stateless legacy API compatibility.
 
         simple = _fold(message).strip().strip("?.! ")
         if simple in RESET_COMMANDS:
@@ -160,85 +165,108 @@ class ConversationManager:
         intent = detect_intent(message)
         original = message
         effective_year = year
-        focused = None
+        chosen_context: list[dict] | None = None
+        selected_focus: str | None = None
         interest_seed = previous.interest_seed
 
-        # The previous AI recommendation specifically asked the student to
-        # choose a focus; a short answer is NOT a new unrelated question.
-        if previous.awaiting_interest and not previous.pending_year:
-            focused = interest_reply(message)
-            if (focused is None and intent in ("unknown", "major_exploration")
-                and previous.year is not None
-                and 3 <= len(message.strip()) <= 110
-                and year is None and year_reply is None
-                and not re.search(r"(?<!\d)20\d{2}(?!\d)", message)
-                and has_academic_focus(message)
-                and retrieve_majors(message, previous.year, limit=1)):
-                # Also accept free-form short interests supported by SQLite,
-                # e.g. 'sinh học' or 'thiết kế vi mạch'. Do not force unrelated
-                # replies into a recommendation without retrieval evidence.
-                focused = ("sở thích", message.strip(), message.strip())
-            if focused is not None:
-                _, description, _ = focused
-                seed = previous.interest_seed or previous.question
-                seed = re.sub(r"(?<!\d)20\d{2}(?!\d)", "", seed)[:220].strip()
-                interest_seed = previous.interest_seed or previous.question
-                original = (
-                    f"Em thích {description}. Trước đó em chia sẻ: {seed}. "
-                    f"Hãy gợi ý các ngành dựa trên hướng {description}."
-                )
-                effective_year = year if year is not None else previous.year
-                intent = "major_exploration"
-
-        if focused is not None:
-            pass
-        elif year_reply is not None and previous.question and (year is None or year == year_reply):
-            # 'Ngành nào A01?' -> '2026'    (pending)
-            # 'Ngành nào A01 năm 2026?' -> 'còn năm 2027?' (reuse last topic)
-            # A follow-up may CHANGE the year from a complete earlier question.
-            # Replace its old explicit year to avoid a false year-conflict error.
+        if year_reply is not None and previous.question and (year is None or year == year_reply):
+            # Year-only replies complete a prior query or update an earlier year.
             original = re.sub(r"(?<!\d)20\d{2}(?!\d)", str(year_reply), previous.question)
             effective_year = year_reply
         elif previous.pending_year and intent == "unknown" and year is None:
-            # Non-answer to a pending clarification: don't silently forget it.
             return {
                 "answer": "Bạn muốn tra cứu năm nào? Ví dụ: 2026.",
                 "intent": detect_intent(previous.question),
-                "status": "clarification_needed",
-                "sources": [],
+                "status": "clarification_needed", "sources": [],
             }
-        elif year is None and previous.year is not None and intent in YEAR_REQUIRED:
-            # In a follow-up, inherit only the missing year, not the whole query.
-            # 'Còn B00?' retains year 2026 but replaces the A01 combination.
-            # Explicit years in the message ALWAYS take priority.
-            embedded_year, problem = extract_year(message, None)
-            if not problem and embedded_year is None:
-                effective_year = previous.year
+        else:
+            # The previous recommendation's own follow-up question is part of
+            # context. A reply can name ANY academic activity; model-assisted
+            # interpretation is optional, while factual grounding is mandatory.
+            decision = Decision()
+            if previous.last_codes and previous.year is not None:
+                decision = decide_rules(
+                    message, waiting_for_interest=previous.awaiting_interest,
+                    selected_codes=previous.last_codes,
+                )
+                if (decision.action == "new" and previous.awaiting_interest
+                        and intent in ("unknown", "major_exploration")
+                        and year is None and len(message) <= 160):
+                    decision = decide_ollama(
+                        message, question=previous.question,
+                        year=previous.year,
+                        followup_prompt=previous.followup_prompt,
+                        candidate_names=list(previous.last_names),
+                    )
+            if decision.action in ("detail", "compare"):
+                return program_response(
+                    year if year is not None else previous.year,
+                    previous.last_codes, decision,
+                )
+            if decision.action == "tuition":
+                return route("Học phí của các ngành vừa gợi ý là bao nhiêu?",
+                             year if year is not None else previous.year)
+            if decision.action == "interest" and previous.awaiting_interest:
+                effective_year = year if year is not None else previous.year
+                if effective_year != 2026:
+                    return route("Em thích " + decision.focus + ", nên học ngành nào?",
+                                 effective_year)
+                seed = previous.interest_seed or previous.question
+                # Supported shortcuts expand editorial retrieval synonyms;
+                # open-ended preferences still retain their exact user wording.
+                shortcut = interest_reply(message)
+                selection = shortcut[2] if shortcut else decision.focus
+                chosen_context = contextual_major_search(
+                    selection, seed, effective_year, limit=5)
+                if not chosen_context:
+                    return {
+                        "answer": ("Mình hiểu bạn quan tâm đến '" + decision.focus[:90]
+                                   + "', nhưng chưa có đủ bằng chứng để chọn ngành "
+                                     "từ dữ liệu HCMUS 2026. Bạn muốn tìm hiểu "
+                                     "môn học hoặc lĩnh vực cụ thể nào hơn?"),
+                        "intent": "major_exploration",
+                        "status": "clarification_needed", "sources": [],
+                    }
+                selected_focus = decision.focus
+                original = ("Em muốn tìm hiểu hướng " + decision.focus[:110] +
+                            ". Sở thích và bối cảnh trước đó: " +
+                            re.sub(r"(?<!\d)20\d{2}(?!\d)", "", seed)[:220] +
+                            ". Hãy giới thiệu ngành liên quan bằng thông tin có nguồn.")
+                interest_seed = seed
+            elif year is None and previous.year is not None and intent in YEAR_REQUIRED:
+                # A standalone fresh question inherits the missing year only.
+                embedded_year, problem = extract_year(message, None)
+                if not problem and embedded_year is None:
+                    effective_year = previous.year
 
-        result = route(original, effective_year,
-                       focus_query=focused[2] if focused else None)
+        result = route(original, effective_year, focus_query=selected_focus,
+                       candidates_override=chosen_context)
+        codes = tuple(result.pop("_recommended_codes", ()))
+        prompt = result.pop("_followup_prompt", "")
         detected = detect_intent(original)
         resolved_year, year_problem = extract_year(original, effective_year)
-
         if year_problem:
-            # Do not carry conflicting years forward as a confirmed year.
             return result
 
-        if result["status"] == "clarification_needed" and detected in YEAR_REQUIRED and resolved_year is None:
+        if (result["status"] == "clarification_needed" and
+                detected in YEAR_REQUIRED and resolved_year is None):
             self._put(session_id, Context(
                 question=original, year=previous.year, pending_year=True,
-                interest_seed=interest_seed if focused else "",
-                updated_at=self.clock()))
+                updated_at=self.clock(),
+            ))
         elif detected in YEAR_REQUIRED and resolved_year is not None:
             exploring = detected == "major_exploration" and result["status"] == "answered"
             self._put(session_id, Context(
-                question=original, year=resolved_year, pending_year=False,
+                question=original, year=resolved_year,
                 awaiting_interest=exploring,
-                interest_seed=(interest_seed or previous.question)[:250]
-                    if focused else (original[:250] if exploring else ""),
-                updated_at=self.clock()))
+                interest_seed=(interest_seed[:250] if selected_focus else
+                               original[:250] if exploring else ""),
+                last_codes=codes if exploring else (),
+                last_names=tuple(r["name"] for r in chosen_context or [])[:3]
+                    if selected_focus else (),
+                followup_prompt=prompt, updated_at=self.clock(),
+            ))
         elif intent != "unknown" and not previous.pending_year:
-            # Clear stale context when switching to a new independent topic.
             self.clear(session_id)
         return result
 
