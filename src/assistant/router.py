@@ -1,11 +1,11 @@
-"""Deterministic intent router for the HCMUS admissions MVP.
-Full LLM retrieval is a separate feature, not claimed here.
-"""
+"""Intent router: verified SQLite lookup + optional retrieved-evidence AI for major exploration."""
 from __future__ import annotations
 import json
 import re
 import unicodedata
 from src.database.db import search_majors, all_majors, get_methods, count_majors
+from src.assistant.retrieval import retrieve_majors
+from src.assistant.ai import explain_with_ai
 
 PORTAL = 'https://tuyensinh.hcmus.edu.vn/'
 PUBLISHED_2026_PROGRAM_COUNT = 39
@@ -84,21 +84,33 @@ def route(message:str,year:int|None)->dict:
         text='Các phương thức xét tuyển HCMUS 2026 (tóm tắt):\n'+'\n'.join(f"• {r['code']}: {r['summary']}" for r in methods)
         return response(text+'\nĐọc thông báo chi tiết để kiểm tra điều kiện từng phương thức.',intent,sources=[{'title':'Thông báo phương thức '+r['code']+' – HCMUS','url':r['source_url'],'admission_year':y} for r in methods])
     if intent=='major_exploration':
-        matched=set()
-        for interest,tags in INTEREST_GROUPS.items():
-            if interest in clean:matched.update(tags)
-        if not matched:
-            return response('Bạn thích lĩnh vực nào: lập trình, toán, dữ liệu, vật lý, hóa học, sinh học hay môi trường?',intent,'clarification_needed')
-        ranked=[]
-        for r in all_majors(y):
-            tags={normalized(v) for v in json.loads(r['tags_json'])}
-            score=len({normalized(t) for t in matched} & tags)
-            if score:ranked.append((score,r))
-        ranked.sort(key=lambda pair:(-pair[0],pair[1]['name']))
-        choices=[r for _,r in ranked[:5]]
-        if not choices:return response('Chưa đủ dữ liệu về ngành phù hợp trong bộ mẫu đã được xác minh.',intent,'insufficient_evidence')
-        names='\n'.join(f"• {r['name']} ({r['code']})" for r in choices)
-        return response('Gợi ý để bạn tìm hiểu thêm, dựa trên khớp từ khóa sở thích với nhóm ngành trong database (không phải kết quả AI hoặc đánh giá năng lực cá nhân):\n'+names+'\n'+coverage_note(y),intent,sources=[{'title':choices[0]['source_title'],'url':choices[0]['source_url'],'admission_year':2026}])
+        candidates=retrieve_majors(message,y,limit=5)
+        if not candidates:
+            return response(
+                'Bạn thích lĩnh vực hoặc hoạt động nào (ví dụ: lập trình, toán, dữ liệu, sinh học, vật lý)? '
+                'Mình cần thêm thông tin để tìm ngành phù hợp trong dữ liệu HCMUS.',
+                intent,'clarification_needed')
+        explanations=explain_with_ai(message,candidates)
+        if explanations:
+            chosen=[r for r in candidates if r['code'] in explanations][:3]
+            lines='\\n'.join(
+                f"• {r['name']} ({r['code']}): {explanations[r['code']]}"
+                for r in chosen)
+            intro='AI hỗ trợ giải thích mức độ liên quan giữa sở thích và các ngành đã truy xuất từ database:'
+        else:
+            chosen=candidates[:3]
+            lines='\\n'.join(
+                f"• {r['name']} ({r['code']}): từ khóa liên quan: "
+                +(', '.join(r['tags'][:4]) if r['tags'] else 'tên ngành')
+                for r in chosen)
+            intro='Gợi ý sơ bộ từ dữ liệu đã truy xuất (AI chưa cấu hình hoặc tạm không khả dụng):'
+        sources=[]
+        for row in chosen:
+            if row['source_url'] not in [s['url'] for s in sources]:
+                sources.append({'title':row['source_title'],'url':row['source_url'],'admission_year':y})
+        notice=('Từ khóa phục vụ tìm kiếm do nhóm biên soạn, không phải mô tả chương trình đào tạo '
+                'chính thức. Đây là gợi ý tham khảo, không phải kết luận về mức độ phù hợp.')
+        return response(intro+'\\n'+lines+'\\n'+notice+'\\n'+coverage_note(y),intent,sources=sources)
     if intent in ('major_filter','admission_lookup'):
         found=[c for c in COMBINATIONS if re.search(r'(?<![A-Z0-9])'+c+r'(?![A-Z0-9])',message.upper())]
         if len(found)>1:return response('Bạn muốn tìm theo tổ hợp nào? Vui lòng nhập một mã tổ hợp (ví dụ A01).',intent,'clarification_needed')
