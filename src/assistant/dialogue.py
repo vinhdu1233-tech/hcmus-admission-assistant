@@ -168,9 +168,9 @@ def contextual_major_search(focus: str, original_question: str,
         return sorted(subject, key=score, reverse=True)[:limit]
     if ranked:
         return ranked[:limit]
-    # A user answered a valid but non-major-specific preference. We can keep
-    # relevant *previous* recommendations, without claiming new facts.
-    return subject[:limit]
+    # Neither the focus nor the previous academic subject substantiates
+    # this specific preference. Do not invent a connection to an old major.
+    return []
 
 
 def program_response(year: int, codes: tuple[str, ...], decision: Decision) -> dict:
