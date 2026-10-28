@@ -10,6 +10,7 @@ const els = {
   mobileNav: document.getElementById('mobile-nav'),
   modal: document.getElementById('assistant-modal'),
   close: document.getElementById('close-modal'),
+  newChat: document.getElementById('new-chat'),
   floating: document.getElementById('floating-chat'),
   messages: document.getElementById('messages'),
   form: document.getElementById('chat-form'),
@@ -131,6 +132,7 @@ function updateStatus(message,error=false){els.status.textContent=message;els.st
 function setBusy(value){
   sending=value;els.submit.disabled=value;els.input.disabled=value;
   document.querySelectorAll('[data-question]').forEach(b=>b.disabled=value);
+  if (els.newChat) els.newChat.disabled=value;
   els.submit.setAttribute('aria-label',value?'Đang gửi câu hỏi':'Gửi câu hỏi');
 }
 function extractYear(question) {
@@ -141,7 +143,8 @@ async function askServer(question) {
   const payload={message:question};
   const year=extractYear(question);if(year!==null)payload.admission_year=year;
   const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),16000);
+  // Local Ollama may need time to warm up; Node upstream timeout is 130 seconds.
+  const timeout=setTimeout(()=>controller.abort(),125000);
   try{
     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
     const data=await response.json().catch(()=>null);
@@ -162,13 +165,18 @@ async function sendQuestion(raw) {
   if(question.length>1000){updateStatus('Câu hỏi tối đa 1000 ký tự.',true);return;}
   if(els.modal.hidden)openAssistant();
   appendMessage(question,'user');els.input.value='';updateCount();setBusy(true);
-  const pending=appendTyping();updateStatus('Đang xử lý câu hỏi…');
+  const pending=appendTyping();updateStatus('Đang truy xuất thông tin và xử lý câu hỏi…');
   try{
     const data=await askServer(question);
     pending.remove();appendMessage(data.answer,'bot',{status:data.status,sources:data.sources});
     updateStatus(mode==='demo'?'DEMO MODE · Đây là phản hồi mô phỏng, không phải kết quả truy xuất tuyển sinh.':'API MODE · Hãy đối chiếu nguồn và năm áp dụng.');
   }catch(err){
-    pending.remove();appendMessage(err.message || 'Đã có lỗi xảy ra.','bot',{status:'error',sources:[]});
+    pending.remove();
+    const errorRow=appendMessage(err.message || 'Đã có lỗi xảy ra.','bot',{status:'error',sources:[]});
+    const retry=element('button','chat-retry','↻ Thử gửi lại');
+    retry.type='button';
+    retry.addEventListener('click',()=>{errorRow.remove();sendQuestion(question);},{once:true});
+    errorRow.append(retry);
     updateStatus(err.message||'Không thể gửi câu hỏi.',true);
   }finally{setBusy(false);els.input.focus();}
 }
@@ -177,6 +185,30 @@ els.form.addEventListener('submit',event=>{event.preventDefault();sendQuestion(e
 els.input.addEventListener('input',updateCount);
 els.input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendQuestion(els.input.value);}});
 document.querySelectorAll('[data-question]').forEach(button=>button.addEventListener('click',()=>{openAssistant();sendQuestion(button.dataset.question);}));
+
+// New conversation resets BOTH the displayed thread and FastAPI's stored
+// per-browser context. Never clear the UI before the server confirms a reset.
+if(els.newChat)els.newChat.addEventListener('click',async()=>{
+  if(sending)return;
+  els.newChat.disabled=true;
+  updateStatus('Đang bắt đầu hội thoại mới…');
+  try{
+    const res=await fetch('/api/conversation/reset',{method:'POST',cache:'no-store'});
+    const data=await res.json();
+    if(!res.ok || data.ok!==true)throw new Error(data.message||'Không thể đặt lại hội thoại.');
+    els.messages.replaceChildren();
+    const welcome=element('div','msg bot');
+    welcome.append(element('span','msg-label','HCMUS GUIDE'));
+    welcome.append(element('div','msg-bubble','Chào bạn! Mình là HCMUS Guide. Bạn muốn tìm hiểu về tuyển sinh, ngành học hay checklist chuẩn bị hồ sơ?'));
+    els.messages.append(welcome);
+    els.input.value='';updateCount();
+    updateStatus('Đã bắt đầu cuộc trò chuyện mới. Ngữ cảnh cũ không còn được sử dụng.');
+    scrollMessages();
+    els.input.focus();
+  }catch(error){
+    updateStatus(error.message||'Không thể bắt đầu cuộc trò chuyện mới.',true);
+  }finally{els.newChat.disabled=false;}
+});
 
 // The server chooses demo vs API mode; never store API keys or secrets in browser JS.
 async function loadMode(){
