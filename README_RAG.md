@@ -28,7 +28,7 @@ If you have unstaged local frontend changes, **stash or commit them before** doi
    ```dotenv
    AI_PROVIDER=gemini
    GEMINI_API_KEY=PASTE_YOUR_SECRET_HERE
-   GEMINI_MODEL=gemini-2.5-flash-lite
+   GEMINI_MODEL=gemini-3.5-flash-lite
    ```
 3. `source .venv/bin/activate && python -m pip install -r requirements-backend-dev.txt`.
 4. Restart FastAPI after editing `.env` (stop previous server with Ctrl+C). Node UI must be started using `CHAT_MODE=api`.
