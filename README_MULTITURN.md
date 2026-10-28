@@ -40,6 +40,20 @@ Bạn: 2026 nhé
 Bot: ...A01 năm 2026...
 ```
 
+**Ví dụ 4 — trả lời câu hỏi khám phá ngành mà AI vừa hỏi:**
+
+```text
+Bạn: Em thích Python và toán, nên học ngành nào năm 2026?
+Bot: [Gợi ý ngành]. Bạn thích xây dựng ứng dụng, giải bài toán thuật toán hay phân tích dữ liệu?
+Bạn: Phân tích dữ liệu
+Bot: [Gợi ý mới theo nhóm Khoa học dữ liệu/Thống kê từ SQLite 2026,
+      cùng nguồn HCMUS; không cần nhắc lại năm hay sở thích cũ]
+Bạn: Còn xây dựng ứng dụng?
+Bot: [Gợi ý theo hướng phần mềm/CNTT, vẫn thuộc năm 2026]
+```
+
+Hệ thống chỉ diễn giải lựa chọn ngắn nếu **cùng phiên đang thảo luận khám phá ngành**. Ba hướng được hỗ trợ: phát triển ứng dụng, thuật toán, phân tích dữ liệu. Không lấy ý tưởng do Ollama bịa thành thông tin tuyển sinh chính thức.
+
 **Reset:** nhắn `bắt đầu lại` hoặc `reset` để quên câu hỏi gần nhất của phiên. Phiên tự hết hạn sau **1 giờ** không hoạt động hoặc khi FastAPI khởi động lại. Tối đa 500 phiên được giữ trong RAM; không lưu lịch sử chat hay dữ liệu cá nhân vào SQLite.
 
 ## Chạy trên Mac (sau khi đã lưu thay đổi cục bộ)
