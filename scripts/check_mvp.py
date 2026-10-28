@@ -17,6 +17,7 @@ TEST_FILES = [
     "tests/test_retrieval_ai.py",
     "tests/test_official_profiles.py",
     "tests/test_conversation.py",
+    "tests/test_interest_followup.py",
 ]
 
 
