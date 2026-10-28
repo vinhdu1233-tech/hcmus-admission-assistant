@@ -27,9 +27,9 @@ Các truy vấn dùng SQL có tham số (`?`) để tránh SQL injection. DB t�
 
 ## Phạm vi dữ liệu hiện tại
 
-**Seed hiện có trên GitHub lúc viết README là 13/39 ngành/nhóm ngành 2026.** Bạn có thể thay `data/curated/majors_2026.json` bằng bộ 39 bản ghi đã kiểm chứng từ bảng HCMUS cập nhật 10/7/2026: https://tuyensinh.hcmus.edu.vn/2026-thong-tin-tuyen-sinh/. Sau khi chạy `python -m src.database.db`, Router sẽ đọc trực tiếp số lượng bản ghi thực tế, không báo cứng 13/39 và không giới hạn 20 dòng. Việc có 39 bản ghi không tự động xác minh rằng từng dòng đúng; vẫn cần đối chiếu mã, chỉ tiêu, tổ hợp và nguồn.
+**Seed của branch hiện có 39/39 ngành/nhóm ngành năm 2026, tổng 4.926 chỉ tiêu**, trích xuất từ bảng HCMUS cập nhật 10/7/2026: https://tuyensinh.hcmus.edu.vn/2026-thong-tin-tuyen-sinh/. Sau khi chạy `python -m src.database.db`, Router đọc số lượng bản ghi thực tế và không giới hạn danh sách ở 20 dòng. Việc có 39 bản ghi không tự động xác minh từng dòng; vẫn cần đối chiếu mã, chỉ tiêu, tổ hợp và nguồn.
 
-**Feature 2 hiện dùng keyword matching deterministic**, không phải LLM. Khi triển khai Retrieval/AI ở bước tiếp theo, cần dùng mô tả chương trình đào tạo đã kiểm chứng trước khi đưa ra khuyến nghị sâu.
+**Feature 2 đã tích hợp retrieval BM25-style + AI tùy chọn**, giải thích dựa trên các ngành truy xuất và tags do nhóm tự biên soạn. Không có API key thì chỉ trả gợi ý retrieval. Chưa có mô tả chương trình đào tạo đầy đủ; không khẳng định môn học/cơ hội nghề nghiệp. Xem `README_RAG.md` để cấu hình API key và kiểm thử.
 
 **Feature 3 checklist** nằm ở Frontend Node.js riêng (localStorage) và không cần Database để demo.
 
@@ -57,9 +57,9 @@ SELECT code, name, summary FROM admission_methods WHERE year=2026;
 
 ## Kiểm tra bản mở rộng 39 ngành (router dynamic)
 
-1. Nếu JSON 39 ngành mới chỉ có trên máy bạn, commit thay đổi JSON trên branch `feat/mvp-sqlite-router` (không commit file SQLite).
+1. Bộ JSON 39 ngành đã nằm trên branch `feat/mvp-sqlite-router` (không commit file SQLite).
 2. Cập nhật code mới nhất từ PR #13 và chạy `python -m src.database.db`.
 3. Trong DBeaver: `SELECT COUNT(*), SUM(quota) FROM majors WHERE year=2026;` (mục tiêu 39 và 4926 sau khi đã xác minh).
-4. Chạy `python -m pytest -q tests/test_api_smoke.py tests/test_db_router.py`.
+4. Chạy `python -m pytest -q tests/test_api_smoke.py tests/test_db_router.py tests/test_retrieval_ai.py`.
 5. Gửi câu hỏi `HCMUS có những ngành nào năm 2026?` để kiểm tra trả đủ 39 dòng và thông báo `39/39`.
 6. Nếu Database hiện chỉ có 13 ngành, Router trả đủ 13 và thông báo `13/39 ... chưa đầy đủ` — không khẳng định là đã có 39.
