@@ -52,8 +52,8 @@ function demoResponse(message) {
   if (/a01|tổ hợp|học phí|phương thức|tuyển sinh|ngành|xét tuyển/i.test(txt)) {
     return {answer:'Mình đã nhận được câu hỏi về tuyển sinh hoặc ngành học. Hiện hệ thống đang ở DEMO MODE và chưa truy xuất cơ sở dữ liệu chính thức. Sau khi nối Backend, câu trả lời sẽ được kiểm chứng theo năm tuyển sinh và kèm nguồn phù hợp.',status:'insufficient_evidence',intent:'admission_lookup',sources:portal};
   }
-  if (/năm nhất|ôn tập|học hiệu quả|chuẩn bị|kỹ năng/i.test(txt)) {
-    return {answer:'Để chuẩn bị cho năm nhất, bạn có thể hệ thống lại kiến thức nền tảng, luyện thói quen tự học và tìm hiểu trước chương trình ngành dự định theo học. Đây là gợi ý chung, không phải hướng dẫn học vụ chính thức của HCMUS.',status:'answered',intent:'study_guidance',sources:[]};
+  if (/checklist|hồ sơ|tiến độ/i.test(txt)) {
+    return {answer:'Checklist hồ sơ nằm trên trang chủ. Bạn có thể chọn năm 2025/2026, phương thức, đánh dấu công việc và lưu tiến độ trong trình duyệt. Đây là hướng dẫn kế hoạch cá nhân, không thay thế thông báo HCMUS.',status:'answered',intent:'study_guidance',sources:[]};
   }
   return {answer:'Xin chào! Đây là giao diện demo của HCMUS Guide. Mình đã nhận câu hỏi của bạn; chức năng trả lời dựa trên dữ liệu và AI thật sẽ được kết nối qua FastAPI của nhóm.',status:'answered',intent:'unknown',sources:[]};
 }
