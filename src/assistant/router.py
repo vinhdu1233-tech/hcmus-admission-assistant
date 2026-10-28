@@ -61,7 +61,7 @@ def extract_year(message:str,request_year:int|None)->tuple[int|None,str|None]:
         return None,'Năm trong câu hỏi khác với năm được chọn. Bạn muốn tra cứu năm nào?'
     return request_year if request_year is not None else embedded, None
 
-def route(message:str,year:int|None)->dict:
+def route(message:str,year:int|None,*,focus_query:str|None=None)->dict:
     intent=detect_intent(message)
     y,error=extract_year(message,year)
     if error:return response(error,intent,'clarification_needed')
@@ -84,7 +84,7 @@ def route(message:str,year:int|None)->dict:
         text='Các phương thức xét tuyển HCMUS 2026 (tóm tắt):\n'+'\n'.join(f"• {r['code']}: {r['summary']}" for r in methods)
         return response(text+'\nĐọc thông báo chi tiết để kiểm tra điều kiện từng phương thức.',intent,sources=[{'title':'Thông báo phương thức '+r['code']+' – HCMUS','url':r['source_url'],'admission_year':y} for r in methods])
     if intent=='major_exploration':
-        candidates=retrieve_majors(message,y,limit=5)
+        candidates=retrieve_majors(focus_query or message,y,limit=5)
         if not candidates:
             return response(
                 'Bạn đang quan tâm môn học hoặc hoạt động nào (ví dụ: lập trình, dữ liệu, vật lý, sinh học)? '
@@ -96,7 +96,8 @@ def route(message:str,year:int|None)->dict:
             lines='\n'.join(
                 f"• {r['name']} ({r['code']}): {explanations[r['code']]}"
                 for r in chosen)
-            intro='Dựa trên sở thích bạn chia sẻ, đây là các hướng ngành đáng tìm hiểu:'
+            intro=('Dựa trên hướng bạn vừa chọn, đây là những ngành đáng tìm hiểu:'
+                   if focus_query else 'Dựa trên sở thích bạn chia sẻ, đây là các hướng ngành đáng tìm hiểu:')
         else:
             chosen=candidates[:3]
             lines='\n'.join(
@@ -104,7 +105,9 @@ def route(message:str,year:int|None)->dict:
                 +(r['official_profile'] if r.get('official_profile') else
                   'Tên ngành và các từ khóa liên quan gợi ý đây có thể là lựa chọn để bạn tìm hiểu thêm.')
                 for r in chosen)
-            intro='Gợi ý từ dữ liệu truy xuất (AI chưa cấu hình hoặc tạm không khả dụng):'
+            intro=('Gợi ý theo hướng bạn vừa chọn từ dữ liệu HCMUS '
+                   '(AI chưa cấu hình hoặc tạm không khả dụng):'
+                   if focus_query else 'Gợi ý từ dữ liệu truy xuất (AI chưa cấu hình hoặc tạm không khả dụng):')
         sources=[]
         for row in chosen:
             urls=[(row['source_url'],row['source_title'])]
@@ -113,7 +116,9 @@ def route(message:str,year:int|None)->dict:
             for url,title in urls:
                 if not any(s['url']==url for s in sources):
                     sources.append({'title':title,'url':url,'admission_year':y})
-        if any(word in clean for word in ('lap trinh','python','code','toan','du lieu')):
+        if focus_query:
+            followup='Bạn có thể chọn hướng khác để so sánh, hoặc đặt câu hỏi tuyển sinh tiếp theo.'
+        elif any(word in clean for word in ('lap trinh','python','code','toan','du lieu')):
             followup='Bạn thích hơn việc xây dựng ứng dụng, giải bài toán thuật toán hay phân tích dữ liệu?'
         else:
             followup='Bạn thích hoạt động nào nhất trong lĩnh vực này để mình gợi ý sát hơn?'
