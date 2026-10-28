@@ -31,6 +31,12 @@ jobs:
         run: |
           python -m pytest -q tests/test_api_smoke.py tests/test_db_router.py tests/test_retrieval_ai.py tests/test_official_profiles.py tests/test_conversation.py tests/test_interest_followup.py tests/test_flexible_dialogue.py
       - name: Check Node syntax
-        run: node --check ui/server.mjs
-      - name: Test Node session cookie and backend forwarding
-        run: node --test tests/test_conversation_proxy.mjs
+        run: |
+          node --check ui/server.mjs
+          node --check ui/app.js
+          node --check ui/admission-methods.js
+      - name: Test Node proxy and checklist
+        run: |
+          node --test tests/test_conversation_proxy.mjs
+          node --test tests/test_planner_methods.mjs
+          node --test tests/test_web_product.mjs
