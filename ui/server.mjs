@@ -4,6 +4,7 @@
  * This proxy avoids frontend/backend cross-origin issues during development.
  */
 import http from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,8 +25,8 @@ const CONTENT_TYPES = {
   '.json': 'application/json; charset=utf-8',
 };
 
-function json(res, status, value) {
-  res.writeHead(status, {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store'});
+function json(res, status, value, extraHeaders={}) {
+  res.writeHead(status, {'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...extraHeaders});
   res.end(JSON.stringify(value));
 }
 function safeError(code, message) {
@@ -57,6 +58,16 @@ function demoResponse(message) {
   return {answer:'Xin chào! Đây là giao diện demo của HCMUS Guide. Mình đã nhận câu hỏi của bạn; chức năng trả lời dựa trên dữ liệu và AI thật sẽ được kết nối qua FastAPI của nhóm.',status:'answered',intent:'unknown',sources:[]};
 }
 
+// HttpOnly browser-session cookie: each browser gets its own opaque UUID.
+ // No frontend JS edits needed: the server forwards the UUID to FastAPI.
+function conversationSession(req) {
+  const cookie=String(req.headers.cookie || '');
+  const match=/(?:^|;\s*)hcmus_sid=([0-9a-f-]{36})(?:;|$)/.exec(cookie);
+  const valid=match && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(match[1]);
+  const id=valid ? match[1] : randomUUID();
+  return {id, headers:valid?{}:{'Set-Cookie':`hcmus_sid=${id}; Path=/; HttpOnly; SameSite=Lax`}};
+}
+
 async function handleChat(req, res) {
   let body;
   try {body=await readBody(req);} catch(err) {
@@ -68,7 +79,10 @@ async function handleChat(req, res) {
   if (year !== undefined && year !== null && (!Number.isInteger(year) || year < 2000 || year > 2100)) {
     return json(res,400,safeError('INVALID_YEAR','Năm tuyển sinh không hợp lệ.'));
   }
-  if (MODE === 'demo') return json(res,200,demoResponse(msg));
+  const session=conversationSession(req);
+  if (MODE === 'demo') return json(res,200,demoResponse(msg),session.headers);
+  // Never trust caller-supplied session IDs; the HttpOnly cookie owns session identity.
+  body.conversation_id=session.id;
   try {
     const upstream = await fetch(new URL('/chat',API_ORIGIN), {
       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(130000),
@@ -77,10 +91,10 @@ async function handleChat(req, res) {
     let data;
     try { data = JSON.parse(text); } catch {throw new Error('NON_JSON_RESPONSE');}
     if (typeof data !== 'object' || data === null) throw new Error('INVALID_RESPONSE');
-    return json(res, upstream.status >= 200 && upstream.status < 600 ? upstream.status : 502, data);
+    return json(res, upstream.status >= 200 && upstream.status < 600 ? upstream.status : 502, data,session.headers);
   } catch (e) {
     console.error('[HCMUS Guide] Backend request failed:',e.name || 'Error');
-    return json(res,503,safeError('BACKEND_UNAVAILABLE','Chưa kết nối được Backend FastAPI. Hãy kiểm tra dịch vụ hoặc chuyển về demo mode.'));
+    return json(res,503,safeError('BACKEND_UNAVAILABLE','Chưa kết nối được Backend FastAPI. Hãy kiểm tra dịch vụ hoặc chuyển về demo mode.'),session.headers);
   }
 }
 
