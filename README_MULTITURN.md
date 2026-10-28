@@ -98,3 +98,36 @@ rm -f "$COOKIE_JAR"
 **Backward compatibility:** Gọi trực tiếp FastAPI mà không gửi `conversation_id` vẫn hoạt động, nhưng sẽ không nhớ câu trước. API nhận `conversation_id` UUID tuỳ chọn. Node quản lý mã phiên từ cookie; người dùng không cần nhập UUID.
 
 **Giới hạn MVP:** ngữ cảnh chỉ nhớ các mốc ngắn và một câu hỏi gần nhất, không phải hội thoại tự do với trí nhớ dài hạn; các phiên chia sẻ giữa nhiều tab cùng trình duyệt; restart Backend hoặc chạy nhiều workers không chia sẻ RAM. Để triển khai công khai nhiều server, chuyển state sang Redis/DB với TTL, xác thực người dùng nếu có dữ liệu cá nhân, thêm nút “Trò chuyện mới” và chính sách bảo vệ dữ liệu. Câu trả lời về tuyển sinh vẫn phải dùng dữ liệu HCMUS đã kiểm chứng, không dùng AI tự suy đoán năm khác.
+
+
+## Mở rộng: hội thoại mở không giới hạn ở ba từ khóa gợi ý
+
+Bắt đầu từ câu trả lời AI như:
+"Bạn thích hoạt động nào nhất trong lĩnh vực này để mình gợi ý sát hơn?"
+
+Trên cùng phiên, học sinh có thể đáp:
+- "lĩnh vực nghiên cứu", "mình thích làm thí nghiệm", "em muốn làm nghiên cứu trong phòng lab" — hệ thống giữ lĩnh vực từ câu trước, ưu tiên mô tả có bằng chứng nghiên cứu/thực hành và gợi ý chương trình HCMUS 2026.
+- "xây dựng ứng dụng", "phân tích dữ liệu", "thuật toán", "sinh học", "thiết kế vi mạch" — thay đổi hướng khám phá theo ý mới, không cần nhập lại năm.
+- "ngành thứ hai học gì?" — sử dụng đúng thứ tự ngành vừa hiển thị và mô tả nguồn HCMUS.
+- "so sánh hai ngành đầu" — so sánh 2 mô tả chính thức, không tự bịa học phần.
+- "ngành đó học gì?" khi hệ thống vừa hiển thị 3 ngành — phải hỏi rõ ngành nào.
+- "còn học phí?" — nhớ năm, nhưng báo dữ liệu học phí chưa xác minh nếu không có nguồn.
+
+Cơ chế: src/assistant/dialogue.py thử các quy tắc đơn giản trước, sau đó tùy chọn
+dùng Ollama local để phân loại câu tiếp nối mơ hồ qua JSON schema; nó **không**
+được phép tạo ngành, điểm hay chính sách tuyển sinh. Dù Ollama phân loại được ý
+định, Retrieval/SQLite vẫn phải có nguồn cho câu trả lời chuyên ngành.
+Tắt Ollama vẫn dùng được các trường hợp phổ biến theo quy tắc.
+
+**Giới hạn:** Không thể bảo đảm trả lời chính xác *mọi* câu hỏi. Mảng dữ liệu chính
+hiện là tuyển sinh 2026 và mô tả chương trình; học phí, điểm chuẩn ngoài phạm vi,
+thông tin nghề nghiệp có số liệu chưa xác minh và câu hỏi mơ hồ sẽ được giải thích
+giới hạn hoặc yêu cầu làm rõ, không tự bịa. Mỗi phiên lưu câu gần nhất, năm,
+tối đa ba mã ngành đã gợi ý cùng câu hỏi tiếp theo, tự hết hạn sau một giờ.
+
+Kiểm thử:
+
+```bash
+python -m pytest -q tests/test_conversation.py tests/test_interest_followup.py tests/test_flexible_dialogue.py
+node --test tests/test_conversation_proxy.mjs
+```
