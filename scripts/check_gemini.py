@@ -33,8 +33,8 @@ try:
             model=model,
             contents="Trả lời đúng một từ: OK",
             config=types.GenerateContentConfig(
-                temperature=0,
-                max_output_tokens=64,
+                thinking_config=types.ThinkingConfig(thinking_level="minimal"),
+                max_output_tokens=128,
             ),
         )
     print("Gemini request: SUCCESS")
