@@ -26,11 +26,12 @@ Chỉ đổi số timeout, **không ghi đè** các thay đổi giao diện đan
 
 Khác biệt quan trọng:
 - 39/39 là **ngành/nhóm ngành trong bảng tuyển sinh** (`data/curated/majors_2026.json`).
-- Hiện mới có **5 mô tả chương trình** được đối chiếu trực tiếp trên trang giới thiệu ngành (`data/curated/program_profiles_2026.json`). Còn 34 bản ghi phải xét nguồn. Không được báo 39/39 mô tả.
-- Trong đó **mã xét tuyển ngành Trí tuệ nhân tạo 2026 là `7480107`** trong bảng tuyển sinh, trong khi trang giới thiệu ghi **mã ngành đào tạo `7480207`**. Chưa xác minh mối quan hệ nên chưa nhập tóm tắt vào bảng `program_profiles`. Tuyệt đối không âm thầm sửa mã xét tuyển.
+- Đã thêm **34 mô tả ngành/nhóm ngành còn thiếu** (tổng **39/39 mô tả**), mỗi mô tả có URL trên website tuyển sinh HCMUS hoặc trang khoa chính thức. Đây là bản tóm tắt để tham khảo, không phải toàn văn chương trình đào tạo.
+- **Trí tuệ nhân tạo:** mã xét tuyển `7480107` trùng bảng năm 2026 và quyết định mở ngành, nhưng trang chi tiết khác ghi `7480207`. Chỉ dùng phần giới thiệu ngành mới của trường để tóm tắt; lưu sai khác trong `review_flags`, không tự ý đổi mã tuyển sinh.
 
 Nguồn:
 - Bảng xét tuyển 2026: https://tuyensinh.hcmus.edu.vn/2026-thong-tin-tuyen-sinh/
+- Nguồn các khoa: https://math.hcmus.edu.vn/ và https://phys.hcmus.edu.vn/
 - Danh mục các khoa/ngành: https://tuyensinh.hcmus.edu.vn/khoa-dao-tao/
 
 Cài BeautifulSoup để đọc HTML:
