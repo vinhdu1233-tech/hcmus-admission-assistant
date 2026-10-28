@@ -104,7 +104,7 @@ class ConversationManager:
             # 'Ngành nào A01 năm 2026?' -> 'còn năm 2027?' (reuse last topic)
             # A follow-up may CHANGE the year from a complete earlier question.
             # Replace its old explicit year to avoid a false year-conflict error.
-            original = re.sub(r"(?<!\\d)20\\d{2}(?!\\d)", str(year_reply), previous.question)
+            original = re.sub(r"(?<!\d)20\d{2}(?!\d)", str(year_reply), previous.question)
             effective_year = year_reply
         elif previous.pending_year and intent == "unknown" and year is None:
             # Non-answer to a pending clarification: don't silently forget it.
