@@ -58,3 +58,26 @@ Reply:
 ```
 
 Never fabricate official admission information: factual answers must be verified by M4's source registry and back-end retrieval.
+
+
+## Feature 3 — Dynamic Application Checklist & Progress Tracker (Oct 2026)
+
+Replaces the original "First-Year Study Guidance" feature with an independent
+non-chatbot planning interface.
+
+- Input: admission year, officially defined admission method, optional exam path.
+- 2025: 1a, 1b, 1c, 1d, 2 (THPT), 3 (ĐGNL).
+- 2026: 1a, 1b, 2; method 2 offers THPT+transcript and ĐGNL+transcript paths.
+- 2027: no synthetic official methods; show unavailable until verified.
+- Algorithm: select year → select method → select path where required → assemble
+  common + method-specific + path-specific tasks → toggle items → calculate
+  round(done / total * 100) → store by year/method/path in browser localStorage.
+- Users can add/remove up to 25 personal tasks; progress does not sync across devices.
+- All data/links are centrally configurable in \`ui/admission-methods.js\`.
+- Sources: official HCMUS admissions announcements; details must be verified
+  per year, course, and applicant category. The planning checklist is not a
+  legally complete list of mandatory requirements.
+- No automatic admissions application, deadlines or guarantees.
+- QA: \`node tests/test_planner_methods.mjs\`, \`cd ui && npm run check\`,
+  then browser tests for select changes, progress, reload, narrow layout,
+  and the existing fullscreen assistant.
