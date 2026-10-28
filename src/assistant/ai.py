@@ -81,7 +81,7 @@ def _explain_gemini(question: str, candidates: list[dict]) -> dict[str, str] | N
         from google.genai import types
         client = genai.Client(
             api_key=key,
-            http_options=types.HttpOptions(timeout=18000),
+            http_options=types.HttpOptions(timeout=60000),
         )
         try:
             result = client.models.generate_content(
