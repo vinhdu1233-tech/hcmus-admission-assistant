@@ -4,7 +4,7 @@
 
 - SQLite 2026 data: program **name/code/quota/combinations** and source URL from the official HCMUS admissions table.
 - Local **BM25-style lexical retrieval** in `src/assistant/retrieval.py`. Searches program names and editorial tags; supports Vietnamese accent normalization and a small synonym dictionary. No vector embeddings, external database, or API key required.
-- **Optional Gemini Free Tier or OpenAI** in `src/assistant/ai.py`. Choose with `AI_PROVIDER=gemini` (recommended for demo) or `AI_PROVIDER=openai`. Both return JSON with codes and reasons, which are validated against SQLite candidates; unknown codes and provider errors cause a local retrieval fallback. No key is sent to the browser.
+- **Optional local Ollama, Gemini Free Tier or OpenAI** in `src/assistant/ai.py`. Choose with `AI_PROVIDER=ollama` (local, free), `AI_PROVIDER=gemini` (cloud Free Tier), or `AI_PROVIDER=openai` (paid). Both return JSON with codes and reasons, which are validated against SQLite candidates; unknown codes and provider errors cause a local retrieval fallback. No key is sent to the browser.
 - Router integration in `src/assistant/router.py` for major exploration intent; Feature 1 SQL lookups and Feature 3 checklist remain separate.
 
 **Evidence limitation:** The 2026 admissions table does **not** supply complete course curricula, job outcomes, salary expectations, personal aptitude measurements or guaranteed admission. `tags` are **group-authored hints**, not official HCMUS program descriptions. Suggestions are **exploratory, not a determination of personal fit**. To improve quality, curate verified departmental/program descriptions with per-paragraph URLs in a subsequent data-ingestion task.
@@ -21,7 +21,31 @@ python -m pytest -q tests/test_api_smoke.py tests/test_db_router.py tests/test_r
 
 If you have unstaged local frontend changes, **stash or commit them before** doing `git pull --rebase origin feat/mvp-sqlite-router`. Do not use `git reset --hard` to resolve a rebase conflict.
 
-## Enable Gemini Free Tier (recommended for your Mac demo)
+## Run free local AI with Ollama — recommended when Gemini REST returns 503
+
+This is the **offline / no-API-key demo** option. It does not call Google or OpenAI.
+The FastAPI backend uses Ollama's local HTTP API at \`127.0.0.1:11434\`.
+Only the five SQLite-retrieved program candidates (official names/codes plus editorial tags) enter the local model prompt. The model may return JSON explanations but cannot add official-looking programs or URLs.
+
+1. Install Ollama for macOS from https://ollama.com/download/mac (Apple Silicon or Intel as supported by the installer). Open Ollama once to start the local server. If you installed a command-line-only build, run \`ollama serve\` in a separate Terminal.
+2. Download model: \`ollama pull qwen3:4b\` (~2.5 GB model download). For a smaller RAM footprint, use \`ollama pull qwen3:1.7b\` (~1.4 GB) and change \`OLLAMA_MODEL\` below. The smaller model may give weaker Vietnamese explanations.
+3. Check local server: \`ollama list\` and \`curl http://127.0.0.1:11434/api/tags\`.
+4. Edit \`.env\` (not \`.env.example\`) in repository root:
+   \`\`\`dotenv
+   AI_PROVIDER=ollama
+   OLLAMA_MODEL=qwen3:4b
+   GEMINI_API_KEY=
+   OPENAI_API_KEY=
+   \`\`\`
+   If you already have valid keys stored securely, they may remain in \`.env\`: \`AI_PROVIDER=ollama\` calls no cloud API, but never commit or share the secrets.
+5. Restart FastAPI with \`python -m uvicorn src.api.main:app --reload --port 8000\` and restart Node in the \`ui/\` directory with \`CHAT_MODE=api PORT=5501 npm start\`.
+6. Ask: \`Em thích lập trình và toán, nên chọn ngành nào năm 2026?\`. A successful local AI explanation starts with \`AI hỗ trợ giải thích\`; when the model is unavailable, the site still gives source-backed retrieval fallback.
+
+**Limits:** Local inference uses your Mac's CPU/GPU/RAM and can be slower. The model download needs an internet connection once; afterwards generation can happen offline. The server proxies are configured with a longer timeout for local inference. Local models may struggle with strict JSON/complex Vietnamese wording; validated IDs + fallback prevent fictitious programs from being shown.
+
+**No AI API charges:** SQLite search, Ollama inference and the offline mocked tests do not use paid cloud tokens.
+
+## Enable Gemini Free Tier (optional when API service works)
 
 1. In https://aistudio.google.com/api-keys , use the key already created in your **Free tier** project. Click the **copy** icon on the key row. Do not enable billing if your intention is to stay on Free tier.
 2. From repository root: `cp -n .env.example .env`. Open `.env` locally and use:
@@ -52,7 +76,7 @@ source .venv/bin/activate
 python -m pytest -q tests/test_api_smoke.py tests/test_db_router.py tests/test_retrieval_ai.py
 ```
 
-The tests isolate the database and set `AI_PROVIDER=none` by default, overriding to mocked provider modes only for simulated Gemini/OpenAI calls. They do **not** validate the real key or network access.
+The tests isolate the database and set `AI_PROVIDER=none` by default, overriding to mocked provider modes only for simulated Ollama/Gemini/OpenAI calls. They do **not** validate the real key or network access.
 
 ## Run end-to-end
 
@@ -94,7 +118,7 @@ Expected: `intent: major_exploration`, `status: answered`, HCMUS links in `sourc
 Browser (Node :5501)
   -> POST /api/chat -> FastAPI (:8000) -> intent router
      -> SQLite (39 2026 program rows) -> lexical retrieval -> top 5 candidates
-        -> Optional Gemini GenAI or OpenAI / structured JSON -> validate known program codes
+        -> Optional Ollama, Gemini GenAI or OpenAI / structured JSON -> validate known program codes
            -> server renders official program names and URL citation
         -> Missing key / failure -> local retrieval explanation
 ```
