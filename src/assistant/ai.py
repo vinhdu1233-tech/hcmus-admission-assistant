@@ -85,7 +85,7 @@ def _explain_gemini(question: str, candidates: list[dict]) -> dict[str, str] | N
         )
         try:
             result = client.models.generate_content(
-                model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
+                model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
                 contents=json.dumps({
                     "student_question": question,
                     "candidates": _evidence(candidates),
