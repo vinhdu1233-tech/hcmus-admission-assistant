@@ -27,7 +27,7 @@ Các truy vấn dùng SQL có tham số (`?`) để tránh SQL injection. DB t�
 
 ## Phạm vi dữ liệu hiện tại
 
-**13 / 39 ngành/nhóm ngành 2026**, chọn từ bảng HCMUS cập nhật 10/7/2026: https://tuyensinh.hcmus.edu.vn/2026-thong-tin-tuyen-sinh/. Dữ liệu mẫu đủ để trình diễn tìm ngành theo A01, nhưng KHÔNG phải toàn bộ danh sách hoặc căn cứ xét đủ điều kiện. Mỗi record gắn nguồn trong DB. Các phương thức tuyển sinh 2026 có link thông báo HCMUS chính thức.
+**Seed hiện có trên GitHub lúc viết README là 13/39 ngành/nhóm ngành 2026.** Bạn có thể thay `data/curated/majors_2026.json` bằng bộ 39 bản ghi đã kiểm chứng từ bảng HCMUS cập nhật 10/7/2026: https://tuyensinh.hcmus.edu.vn/2026-thong-tin-tuyen-sinh/. Sau khi chạy `python -m src.database.db`, Router sẽ đọc trực tiếp số lượng bản ghi thực tế, không báo cứng 13/39 và không giới hạn 20 dòng. Việc có 39 bản ghi không tự động xác minh rằng từng dòng đúng; vẫn cần đối chiếu mã, chỉ tiêu, tổ hợp và nguồn.
 
 **Feature 2 hiện dùng keyword matching deterministic**, không phải LLM. Khi triển khai Retrieval/AI ở bước tiếp theo, cần dùng mô tả chương trình đào tạo đã kiểm chứng trước khi đưa ra khuyến nghị sâu.
 
@@ -53,3 +53,13 @@ SELECT code, name, summary FROM admission_methods WHERE year=2026;
 ## Thay đổi so với test cũ
 
 `tests/test_api_smoke.py` cập nhật 1 kỳ vọng: truy vấn `HCMUS có ngành nào năm 2026?` giờ sẽ được trả `answered` kèm nguồn do đã có database; trước đó cần trả `insufficient_evidence` vì Backend chưa có data. Các test khác giữ ý nghĩa cũ.
+
+
+## Kiểm tra bản mở rộng 39 ngành (router dynamic)
+
+1. Nếu JSON 39 ngành mới chỉ có trên máy bạn, commit thay đổi JSON trên branch `feat/mvp-sqlite-router` (không commit file SQLite).
+2. Cập nhật code mới nhất từ PR #13 và chạy `python -m src.database.db`.
+3. Trong DBeaver: `SELECT COUNT(*), SUM(quota) FROM majors WHERE year=2026;` (mục tiêu 39 và 4926 sau khi đã xác minh).
+4. Chạy `python -m pytest -q tests/test_api_smoke.py tests/test_db_router.py`.
+5. Gửi câu hỏi `HCMUS có những ngành nào năm 2026?` để kiểm tra trả đủ 39 dòng và thông báo `39/39`.
+6. Nếu Database hiện chỉ có 13 ngành, Router trả đủ 13 và thông báo `13/39 ... chưa đầy đủ` — không khẳng định là đã có 39.
