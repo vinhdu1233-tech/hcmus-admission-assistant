@@ -1,13 +1,14 @@
 """FastAPI + SQLite router integration for HCMUS Guide MVP.
-No LLM claim: Major Exploration uses a deterministic keyword match.
+Major exploration uses verified retrieval and optional AI explanations.
 """
 from __future__ import annotations
 from typing import Annotated, Literal
+from uuid import UUID
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, StrictInt, StrictStr
-from src.assistant.router import route
+from src.assistant.conversation import conversation_manager
 from src.database.db import ensure_database
 
 app=FastAPI(title='HCMUS Admission & Study Assistant',version='0.2.0')
@@ -15,6 +16,7 @@ app=FastAPI(title='HCMUS Admission & Study Assistant',version='0.2.0')
 class ChatRequest(BaseModel):
     message: StrictStr
     admission_year: Annotated[StrictInt,Field(ge=2000,le=2100)] | None = None
+    conversation_id: UUID | None = None
 class Source(BaseModel):
     title:str
     url:str
@@ -48,7 +50,10 @@ def chat(request:ChatRequest):
             'Vui lòng nhập một câu hỏi hợp lệ.'))
     try:
         ensure_database()
-        return ChatResponse(**route(msg,request.admission_year))
+        return ChatResponse(**conversation_manager.answer(
+            msg, request.admission_year,
+            str(request.conversation_id) if request.conversation_id is not None else None
+        ))
     except Exception:
         # Avoid exposing internal details and secrets to end users.
         return JSONResponse(status_code=503,content=public_error('SERVICE_UNAVAILABLE',
