@@ -42,11 +42,53 @@ def standalone_year(message: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
+
+# Narrow recognizers for answers to OUR own exploration question.
+# These options are editorial search intents, not official program descriptions.
+INTEREST_FOCUS = (
+    ("ứng dụng", ("xay dung ung dung", "lam ung dung", "lam app",
+                  "phat trien ung dung", "viet app", "ung dung",
+                  "ky thuat phan mem", "viet phan mem"),
+     "phát triển ứng dụng, kỹ thuật phần mềm, công nghệ thông tin",
+     "phần mềm ứng dụng công nghệ thông tin kỹ thuật phần mềm"),
+    ("thuật toán", ("thuat toan", "giai thuat", "giai bai toan",
+                     "lap trinh thuat toan"),
+     "thuật toán, khoa học máy tính và toán tin",
+     "thuật toán khoa học máy tính toán tin"),
+    ("dữ liệu", ("phan tich du lieu", "du lieu", "data", "thong ke",
+                "data science", "khoa hoc du lieu"),
+     "phân tích dữ liệu, khoa học dữ liệu và thống kê",
+     "khoa học dữ liệu thống kê phân tích dữ liệu"),
+)
+
+
+def interest_reply(message: str) -> tuple[str, str, str] | None:
+    """Interpret short choices only in an active major-exploration session.
+
+    Reject questions about admissions/other topics and ambiguous multi-choices.
+    This never makes claims about a program; it selects retrieval keywords.
+    """
+    simple = _fold(message).strip().strip("?.! ")
+    if len(simple) > 110 or re.search(r"(?<!\\d)20\\d{2}(?!\\d)", simple):
+        return None
+    if re.search(r"\\b(?:a0[0-9]|b00|d0[0-9]|x[0-9]{2})\\b", simple):
+        return None
+    matches = []
+    for label, variants, description, search_terms in INTEREST_FOCUS:
+        if any(re.search(r"(?<![a-z0-9])" + re.escape(word) + r"(?![a-z0-9])", simple)
+               for word in variants):
+            matches.append((label, description, search_terms))
+    return matches[0] if len(matches) == 1 else None
+
+
+
 @dataclass(frozen=True)
 class Context:
     question: str = ""
     year: int | None = None
     pending_year: bool = False
+    awaiting_interest: bool = False
+    interest_seed: str = ""
     updated_at: float = 0.0
 
 
@@ -98,8 +140,29 @@ class ConversationManager:
         intent = detect_intent(message)
         original = message
         effective_year = year
+        focused = None
+        focus_label = ""
+        interest_seed = previous.interest_seed
 
-        if year_reply is not None and previous.question and (year is None or year == year_reply):
+        # The previous AI recommendation specifically asked the student to
+        # choose a focus; a short answer is NOT a new unrelated question.
+        if previous.awaiting_interest and not previous.pending_year:
+            focused = interest_reply(message)
+            if focused is not None:
+                focus_label, description, search_terms = focused
+                seed = previous.interest_seed or previous.question
+                seed = re.sub(r"(?<!\\d)20\\d{2}(?!\\d)", "", seed)[:220].strip()
+                interest_seed = previous.interest_seed or previous.question
+                original = (
+                    f"Em thích {description}. Trước đó em chia sẻ: {seed}. "
+                    f"Hãy gợi ý các ngành dựa trên hướng {description}."
+                )
+                effective_year = year if year is not None else previous.year
+                intent = "major_exploration"
+
+        if focused is not None:
+            pass
+        elif year_reply is not None and previous.question and (year is None or year == year_reply):
             # 'Ngành nào A01?' -> '2026'    (pending)
             # 'Ngành nào A01 năm 2026?' -> 'còn năm 2027?' (reuse last topic)
             # A follow-up may CHANGE the year from a complete earlier question.
@@ -122,7 +185,8 @@ class ConversationManager:
             if not problem and embedded_year is None:
                 effective_year = previous.year
 
-        result = route(original, effective_year)
+        result = route(original, effective_year,
+                       focus_query=focused[2] if focused else None)
         detected = detect_intent(original)
         resolved_year, year_problem = extract_year(original, effective_year)
 
@@ -131,11 +195,18 @@ class ConversationManager:
             return result
 
         if result["status"] == "clarification_needed" and detected in YEAR_REQUIRED and resolved_year is None:
-            self._put(session_id, Context(question=original, year=previous.year,
-                                           pending_year=True, updated_at=self.clock()))
+            self._put(session_id, Context(
+                question=original, year=previous.year, pending_year=True,
+                interest_seed=interest_seed if focused else "",
+                updated_at=self.clock()))
         elif detected in YEAR_REQUIRED and resolved_year is not None:
-            self._put(session_id, Context(question=original, year=resolved_year,
-                                           pending_year=False, updated_at=self.clock()))
+            exploring = detected == "major_exploration" and result["status"] == "answered"
+            self._put(session_id, Context(
+                question=original, year=resolved_year, pending_year=False,
+                awaiting_interest=exploring,
+                interest_seed=(interest_seed or previous.question)[:250]
+                    if focused else (original[:250] if exploring else ""),
+                updated_at=self.clock()))
         elif intent != "unknown" and not previous.pending_year:
             # Clear stale context when switching to a new independent topic.
             self.clear(session_id)
