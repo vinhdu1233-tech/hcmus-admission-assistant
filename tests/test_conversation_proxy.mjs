@@ -67,6 +67,15 @@ test('Node chat proxy uses HttpOnly session cookie and forwards stable UUID to F
     assert.equal(received[0].conversation_id,received[1].conversation_id);
     assert.notEqual(received[0].conversation_id,received[2].conversation_id);
     assert.notEqual(received[0].conversation_id,'00000000-0000-0000-0000-000000000000');
+    const reset=await fetch(`http://127.0.0.1:${proxyPort}/api/conversation/reset`,{
+      method:'POST',headers:{Cookie:cookie}
+    });
+    assert.equal(reset.status,200);
+    assert.deepEqual(await reset.json(),{ok:true});
+    assert.equal(reset.headers.get('set-cookie'),null);
+    assert.equal(received.length,4);
+    assert.equal(received[3].message,'bắt đầu lại');
+    assert.equal(received[3].conversation_id,received[0].conversation_id);
   } finally {
     child.kill('SIGTERM');
     await new Promise(resolve=>upstream.close(resolve));
