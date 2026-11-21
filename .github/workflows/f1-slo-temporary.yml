@@ -43,6 +43,22 @@ jobs:
           GEMINI_API_KEY: ''
           HCMUS_DB_PATH: /tmp/hcmus-f1-slo.sqlite3
         run: python scripts/f1_slo_ci_eval_temporary.py
+      - name: Execute negative cases and component-level profiling
+        env:
+          AI_PROVIDER: none
+          OPENAI_API_KEY: ''
+          GEMINI_API_KEY: ''
+          HCMUS_DB_PATH: /tmp/hcmus-f1-slo.sqlite3
+        run: python scripts/f1_slo_deep_metrics_temporary.py
+      - name: Verify integrated Python router and API regression tests
+        env:
+          AI_PROVIDER: none
+          OPENAI_API_KEY: ''
+          GEMINI_API_KEY: ''
+          HCMUS_DB_PATH: /tmp/hcmus-f1-slo.sqlite3
+        run: |
+          python -m pytest -q tests/test_api_smoke.py tests/test_db_router.py > f1_slo_pytest_output.txt 2>&1
+          cat f1_slo_pytest_output.txt
       - name: Upload measured JSON and logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -50,5 +66,7 @@ jobs:
           name: f1-slo-50-results
           path: |
             f1_slo_actual_results.json
+            f1_slo_additional_results.json
+            f1_slo_pytest_output.txt
             /tmp/hcmus-f1-api.log
           if-no-files-found: warn
