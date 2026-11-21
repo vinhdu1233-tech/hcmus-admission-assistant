@@ -1,0 +1,54 @@
+name: Temporary F1 SLO 50-case CI run
+on:
+  push:
+    branches:
+      - test/f1-slo-50-20261121
+jobs:
+  verify-f1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install backend
+        run: python -m pip install -r requirements-backend-dev.txt
+      - name: Start real HCMUS Guide FastAPI
+        env:
+          AI_PROVIDER: none
+          OPENAI_API_KEY: ''
+          GEMINI_API_KEY: ''
+          HCMUS_DB_PATH: /tmp/hcmus-f1-slo.sqlite3
+        run: |
+          python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 > /tmp/hcmus-f1-api.log 2>&1 &
+          echo $! > /tmp/hcmus-f1-api.pid
+          python - <<'PY'
+          import time, urllib.request
+          for i in range(40):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:8000/health",timeout=2) as r:
+                      assert r.status==200
+                      print("API ready")
+                      break
+              except Exception:
+                  time.sleep(0.5)
+          else:
+              raise RuntimeError("FastAPI not ready in 20 seconds")
+          PY
+      - name: Execute 50-case benchmark, latency, reliability and 3 CCU
+        env:
+          AI_PROVIDER: none
+          OPENAI_API_KEY: ''
+          GEMINI_API_KEY: ''
+          HCMUS_DB_PATH: /tmp/hcmus-f1-slo.sqlite3
+        run: python scripts/f1_slo_ci_eval_temporary.py
+      - name: Upload measured JSON and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-slo-50-results
+          path: |
+            f1_slo_actual_results.json
+            /tmp/hcmus-f1-api.log
+          if-no-files-found: warn
