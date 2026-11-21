@@ -49,7 +49,7 @@ jobs:
           OPENAI_API_KEY: ''
           GEMINI_API_KEY: ''
           HCMUS_DB_PATH: /tmp/hcmus-f1-slo.sqlite3
-        run: python scripts/f1_slo_deep_metrics_temporary.py
+        run: PYTHONPATH=. python scripts/f1_slo_deep_metrics_temporary.py
       - name: Verify integrated Python router and API regression tests
         env:
           AI_PROVIDER: none
