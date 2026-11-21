@@ -83,13 +83,17 @@ CASES=[]
 for q in PROGRAM_QUESTIONS:
     CASES.append(dict(family="program_list",question=q,year=None,intent="admission_lookup",
                       status="answered",expected_codes=KNOWN_CODES))
-for combination,q in COMBINATION_QUERIES:
+for combination,q in COMBINATION_QUERIES[:15]:
     CASES.append(dict(family="combination",question=q,year=None,intent="major_filter",
                       status="answered",expected_codes={p["code"] for p in PROGRAMS
                                                       if combination in p["combinations"]}))
 for q in METHOD_QUESTIONS:
     CASES.append(dict(family="methods",question=q,year=None,intent="admission_methods",
                       status="answered",expected_codes=set()))
+for combination,q in COMBINATION_QUERIES[15:]:
+    CASES.append(dict(family="combination",question=q,year=None,intent="major_filter",
+                      status="answered",expected_codes={p["code"] for p in PROGRAMS
+                                                      if combination in p["combinations"]}))
 for q,year,intent,status in EDGE_CASES:
     CASES.append(dict(family="edge",question=q,year=year,intent=intent,
                       status=status,expected_codes=set()))
