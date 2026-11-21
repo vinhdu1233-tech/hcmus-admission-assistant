@@ -1,0 +1,125 @@
+name: F1 system and browser verification
+on:
+  push:
+    branches: [test/f1-slo-50-20261121]
+    paths: ['.github/workflows/f1-system-verification.yml']
+jobs:
+  system-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AI_PROVIDER: none
+      OPENAI_API_KEY: ''
+      GEMINI_API_KEY: ''
+      HCMUS_DB_PATH: /tmp/f1-system-check.sqlite3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and start application
+        run: |
+          python -m pip install -r requirements-backend-dev.txt playwright
+          python -m src.database.db
+          python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 >/tmp/f1-system-api.log 2>&1 &
+          PORT=5501 CHAT_MODE=api API_ORIGIN=http://127.0.0.1:8000 node ui/server.mjs >/tmp/f1-system-node.log 2>&1 &
+          python - <<'PY'
+          import time,urllib.request
+          for _ in range(50):
+              try:
+                  assert urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=1).status==200
+                  assert urllib.request.urlopen("http://127.0.0.1:5501/api/config", timeout=1).status==200
+                  break
+              except Exception:time.sleep(.2)
+          else:raise RuntimeError("Application not ready")
+          PY
+      - name: Run genuine browser-system scenarios and collect results
+        run: |
+          python - <<'PY'
+          import json,os,time,re
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright
+          seed=json.load(open("data/curated/majors_2026.json"))
+          all_codes={m["code"] for m in seed["majors"]}
+          cases=[
+            ("F1-001","HCMUS có những ngành nào năm 2026?","answered","ALL"),
+            ("F1-011","Ngành nào xét tổ hợp A01 năm 2026?","answered","A01"),
+            ("F1-012","HCMUS năm 2026 tuyển sinh tổ hợp B00 ở các ngành nào?","answered","B00"),
+            ("F1-016","Cho biết các ngành có tổ hợp X26 năm 2026.","answered","X26"),
+            ("F1-026","Phương thức tuyển sinh HCMUS năm 2026 là gì?","answered","METHOD"),
+            ("F1-041","Ngành nào xét A01?","clarification_needed",""),
+            ("F1-043","HCMUS có những ngành nào?","clarification_needed",""),
+            ("F1-044","Ngành nào xét A01 năm 2027?","insufficient_evidence",""),
+            ("F1-045","HCMUS tuyển sinh những ngành nào năm 2025?","insufficient_evidence",""),
+            ("F1-047","Ngành nào xét A01 năm 2025 và 2026?","clarification_needed","")
+          ]
+          results=[]
+          with sync_playwright() as p:
+              browser=p.chromium.launch(channel="chrome",headless=True,args=["--no-sandbox"])
+              for ident,q,expected,comb in cases:
+                  ctx=browser.new_context(viewport={"width":1280,"height":900})
+                  page=ctx.new_page()
+                  start=time.perf_counter()
+                  errors=[]
+                  actual=None; linkcount=0; count=None
+                  try:
+                      page.goto("http://127.0.0.1:5501/",wait_until="domcontentloaded")
+                      page.locator("#floating-chat").click()
+                      page.locator("#question").fill(q)
+                      with page.expect_response(lambda r:r.url.endswith("/api/chat"),timeout=20000) as rr:
+                          page.locator("#send-button").click()
+                      response=rr.value
+                      body=response.json()
+                      actual=body.get("status")
+                      assert response.status==200, f"HTTP {response.status}"
+                      assert actual==expected, f"status {actual}"
+                      page.wait_for_function("!document.querySelector('.msg-bubble.typing') && document.querySelectorAll('#messages .msg.bot').length >= 2 && !document.querySelector('#send-button').disabled",timeout=20000)
+                      bot=page.locator("#messages .msg.bot").last
+                      rendered=bot.locator(".msg-bubble").inner_text()
+                      assert rendered.strip()==body["answer"].strip(), "rendered text differs"
+                      links=bot.locator(".msg-sources a")
+                      linkcount=links.count()
+                      if comb in ("ALL","A01","B00","X26"):
+                          exp={m["code"] for m in seed["majors"] if comb=="ALL" or comb in m["combinations"]}
+                          seen={c for c in all_codes if re.search(r"(?<![A-Za-z0-9_])"+re.escape(c)+r"(?![A-Za-z0-9_])",rendered)}
+                          assert seen==exp,f"program codes mismatch: {len(seen)}/{len(exp)}"
+                          count=len(seen)
+                          assert links.count()==1 and links.first.get_attribute("href")==seed["source"]["url"],"source link differs"
+                          assert body["sources"][0]["admission_year"]==2026,"year differs"
+                      elif comb=="METHOD":
+                          assert all(re.search(r"(?m)^• "+code+r":", rendered) for code in ["1a","1b","2"]),"method codes missing"
+                          assert {links.nth(i).get_attribute("href") for i in range(links.count())}=={m["url"] for m in seed["methods"]},"method source links differ"
+                          count=3
+                      else:
+                          assert links.count()==0,"unexpected source for clarification/refusal"
+                          assert bot.locator(".msg-details").count()==1,"limitation state not rendered"
+                  except Exception as ex:errors.append(str(ex)[:400])
+                  result=dict(id=ident,expected=expected,actual=actual,links=linkcount,program_or_method_count=count,elapsed_ms=round((time.perf_counter()-start)*1000,3),passed=not errors,issues=errors)
+                  results.append(result)
+                  print("SYSTEM_CASE "+json.dumps(result,ensure_ascii=False),flush=True)
+                  ctx.close()
+              browser.close()
+          data={"git_sha":os.environ["GITHUB_SHA"],"cases":results,"passed":sum(x["passed"] for x in results),"total":len(results),"environment":"Headless Chrome; real UI -> Node proxy -> FastAPI -> SQLite; localhost CI"}
+          Path("system_results.json").write_text(json.dumps(data,ensure_ascii=False,indent=2))
+          print("SYSTEM_SUMMARY "+json.dumps({k:v for k,v in data.items() if k!="cases"}),flush=True)
+          PY
+      - name: Component, proxy and served-site tests
+        run: |
+          python -m pytest -q tests/test_conversation.py tests/test_api_smoke.py tests/test_db_router.py > system_pytest.txt 2>&1
+          cat system_pytest.txt
+          node --test tests/test_conversation_proxy.mjs tests/test_web_product.mjs > system_node.txt 2>&1
+          cat system_node.txt
+      - name: Upload system proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-system-evidence
+          path: |
+            system_results.json
+            system_pytest.txt
+            system_node.txt
+            /tmp/f1-system-api.log
+            /tmp/f1-system-node.log
