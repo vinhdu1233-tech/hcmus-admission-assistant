@@ -1,0 +1,120 @@
+name: F1 supplemental unit and browser integration checks
+on:
+  push:
+    branches: [test/f1-slo-50-20261121]
+jobs:
+  verify-system:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      AI_PROVIDER: none
+      HCMUS_DB_PATH: /tmp/f1-system.sqlite3
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test tools
+        run: |
+          python -m pip install -r requirements-backend-dev.txt playwright
+          python -m playwright install chromium
+      - name: Unit checks for intent and year rules
+        run: |
+          python - <<'PY'
+          from src.assistant.router import detect_intent, extract_year
+          checks=[
+            ("U01",detect_intent("Ngành nào xét A01 năm 2026?")=="major_filter"),
+            ("U02",detect_intent("Phương thức tuyển sinh năm 2026?")=="admission_methods"),
+            ("U03",extract_year("Ngành nào năm 2026?",None)==(2026,None)),
+            ("U04",extract_year("Ngành nào xét A01?",None)==(None,None)),
+            ("U05",extract_year("Ngành nào năm 2026?",2027)[1] is not None),
+            ("U06",extract_year("Năm 2026 và 2027?",None)[1] is not None)]
+          for name,ok in checks: print("UNIT",name,"PASS" if ok else "FAIL")
+          PY
+      - name: Start production code locally
+        run: |
+          python -m src.database.db
+          python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 >/tmp/f1-system-api.log 2>&1 &
+          CHAT_MODE=api PORT=5501 API_ORIGIN=http://127.0.0.1:8000 node ui/server.mjs >/tmp/f1-node.log 2>&1 &
+          python - <<'PY'
+          import time, urllib.request
+          for i in range(40):
+              try:
+                  assert urllib.request.urlopen("http://127.0.0.1:5501/api/config", timeout=2).status==200
+                  assert urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=2).status==200
+                  break
+              except Exception: time.sleep(.5)
+          else: raise RuntimeError("services not ready")
+          PY
+      - name: Browser integration and session isolation
+        run: |
+          python - <<'PY'
+          import json, re
+          from concurrent.futures import ThreadPoolExecutor
+          from playwright.sync_api import sync_playwright
+          from pathlib import Path
+          results=[]
+          def browser_case(b, name, question, needle, expect_link):
+              ctx=b.new_context()
+              p=ctx.new_page()
+              try:
+                  p.goto("http://127.0.0.1:5501/")
+                  p.locator(".js-open-chat:visible").first.click()
+                  p.locator("#question").fill(question)
+                  with p.expect_response(lambda r: r.url.endswith("/api/chat") and r.request.method=="POST") as response:
+                      p.locator("#send-button").click()
+                  r=response.value
+                  data=r.json()
+                  p.locator(".msg.bot .msg-bubble:not(.typing)").last.wait_for(timeout=15000)
+                  bubble=p.locator(".msg.bot .msg-bubble:not(.typing)").last.inner_text()
+                  urls=p.locator(".msg.bot").last.locator(".msg-sources a").evaluate_all("(anchors) => anchors.map(a => a.href)")
+                  assert r.status==200 and needle in bubble, (r.status,bubble[:150])
+                  assert bool(urls)==expect_link,(urls,expect_link)
+                  if expect_link: assert all(u.startswith("https://tuyensinh.hcmus.edu.vn/") for u in urls)
+                  if expect_link: 
+                      with p.expect_popup() as popup: p.locator(".msg.bot").last.locator(".msg-sources a").first.click(no_wait_after=True)
+                      pop=popup.value
+                      # Browser popup creation is verified; external network delivery is not asserted.
+                      pop.close()
+                  results.append({"id":name,"pass":True,"status":data["status"],"links":len(urls)})
+              except Exception as e: results.append({"id":name,"pass":False,"error":str(e)[:250]})
+              finally: ctx.close()
+          with sync_playwright() as pw:
+              b=pw.chromium.launch(headless=True,args=["--no-sandbox"])
+              browser_case(b,"SYS01","Ngành nào xét A01 năm 2026?","7480107",True)
+              browser_case(b,"SYS02","HCMUS có những ngành nào năm 2026?","39/39",True)
+              browser_case(b,"SYS03","Phương thức tuyển sinh năm 2026?","1a:",True)
+              browser_case(b,"SYS04","Ngành nào xét A01 năm 2027?","2027",False)
+              browser_case(b,"SYS05","Ngành nào xét A01?","năm",False)
+              b.close()
+          # Three independent HTTP cookie sessions with concurrent requests.
+          import urllib.request, http.cookiejar
+          def client(q):
+              jar=http.cookiejar.CookieJar()
+              opener=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+              def ask(msg):
+                  req=urllib.request.Request("http://127.0.0.1:5501/api/chat",data=json.dumps({"message":msg}).encode(),headers={"Content-Type":"application/json"})
+                  with opener.open(req,timeout=15) as r:return json.load(r)
+              first=ask(q)
+              second=ask("2026")
+              sid=next((c.value for c in jar if c.name=="hcmus_sid"),None)
+              return {"query":q,"first":first["status"],"second":second["status"],"sid":sid,"answer":second["answer"]}
+          with ThreadPoolExecutor(max_workers=3) as pool:
+              clients=list(pool.map(client,["Ngành nào xét A01?","Ngành nào xét B00?","Ngành nào xét X26?"]))
+          isolation=all(c["first"]=="clarification_needed" and c["second"]=="answered" and c["sid"] for c in clients) and len(set(c["sid"] for c in clients))==3 and all(k in c["answer"] for k,c in zip(["A01","B00","X26"],clients))
+          for c in clients: c.pop("sid");c.pop("answer")
+          print("SYSTEM_RESULTS",json.dumps(results,ensure_ascii=False))
+          print("SESSION_RESULTS",json.dumps({"pass":isolation,"clients":clients},ensure_ascii=False))
+          Path("f1_supplement.json").write_text(json.dumps({"system":results,"isolation":isolation,"clients":clients},ensure_ascii=False))
+          PY
+      - name: Upload supplementary evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: f1-supplement
+          path: f1_supplement.json
+          if-no-files-found: warn
