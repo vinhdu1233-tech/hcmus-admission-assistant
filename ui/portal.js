@@ -129,7 +129,7 @@ async function loadCalendar(jump=false){
   calendarData=await api('/calendar?'+new URLSearchParams({year:$('year').value,method:$('method').value}));
   const method=$('method').value;$('follow-method').disabled=!user||method==='all';$('follow-method').checked=calendarData.follows.includes(method);
   if(jump){const first=calendarData.events.find(e=>e.user_id===null);const y=Number($('year').value);month=first?new Date(dateKey(first.starts)+'T00:00:00Z'):new Date(Date.UTC(y,0,1));selected=keyDate(month);month.setUTCDate(1);}
-  renderCalendar();await refreshChecklist();
+  renderCalendar();await refreshChecklist();renderPersonalPlans();await refreshProposals();
 }
 $('prev').onclick=()=>moveCalendar(-1);
 $('next').onclick=()=>moveCalendar(1);
@@ -150,9 +150,15 @@ $('personal-form').onsubmit=event=>{event.preventDefault();safe(async()=>{
   $('event-dialog').close();flash('Đã lưu sự kiện.');await loadCalendar();
 });};
 function showEvent(e){
+  const pinned=e.personal_plan||calendarData.plans?.find(p=>p.event_id===e.id);
+  const schedule=pinned||e;
   const box=$('event-detail');box.replaceChildren();box.append(el('h2',e.title),el('p',timeText(e.starts)+' → '+timeText(e.ends)),el('p',e.note||'', 'hint'));
   if(e.source_url){const a=el('a','Mở thông báo chính thức ↗');a.href=e.source_url;a.target='_blank';a.rel='noopener noreferrer';box.append(a);}
-  if(e.ends<Date.now()/1000)box.append(el('p','Mốc đã qua; không thể tạo nhắc mới cho ngày đã qua.','hint'));
+  if(pinned){
+    box.append(el('h3','Kế hoạch cá nhân đã lưu'),el('p',timeText(pinned.starts)+' → '+timeText(pinned.ends)));
+    if(pinned.revision!==e.revision)box.append(el('p','Cảnh báo: kế hoạch cá nhân khác lịch chính thức. Lời nhắc vẫn theo kế hoạch cũ.','plan-warning'));
+  }
+  if(schedule.ends<Date.now()/1000)box.append(el('p','Mốc đã qua; không thể tạo nhắc mới cho ngày đã qua.','hint'));
   if(user){
     if(e.user_id!==null){
       box.append(button('Sửa sự kiện',()=>{$('detail-dialog').close();openPersonal(e);}));
@@ -164,7 +170,7 @@ function showEvent(e){
       for(const days of [7,4,1,0]){
         const l=el('label',undefined,'check'),input=document.createElement('input');input.type='checkbox';input.name=edge;input.value=String(days);
         input.checked=calendarData.reminders.some(r=>r.event_id===e.id&&r.edge===edge&&r.days_before===days);
-        if(!input.checked&&((edge==='start'?e.starts:e.ends)-days*86400<=Date.now()/1000))input.disabled=true;
+        if(!input.checked&&((edge==='start'?schedule.starts:schedule.ends)-days*86400<=Date.now()/1000))input.disabled=true;
         l.append(input,document.createTextNode(days?'Trước '+days+' ngày':'Đúng thời điểm'));group.append(l);
       }form.append(group);
     }
@@ -219,10 +225,50 @@ async function openNoticeEvent(id){
   selected=dateKey(e.starts);month=new Date(selected+'T00:00:00Z');month.setUTCDate(1);
   await loadCalendar();showEvent(e);
 }
+function renderPersonalPlans(){
+  const panel=$('personal-plans-panel'),b=$('personal-plans');panel.hidden=!user;b.replaceChildren();
+  if(!user)return;
+  const plans=calendarData.plans||[];
+  if(!plans.length)b.append(el('p','Chưa lưu kế hoạch chính thức nào vào tài khoản.','hint'));
+  for(const p of plans){
+    const row=el('div',undefined,'entry');row.append(el('strong',p.title),el('p',timeText(p.starts)+' → '+timeText(p.ends)));
+    if(p.revision!==p.official_revision)row.append(el('p','Kế hoạch cũ; hạn chính thức hiện tại: '+timeText(p.official_ends),'plan-warning'));
+    row.append(button('Xem sự kiện',()=>openNoticeEvent(p.event_id)));b.append(row);
+  }
+}
+async function refreshProposals(){
+  const b=$('update-proposals');b.replaceChildren();if(!user)return;
+  const data=await api('/calendar/proposals');
+  if(!data.items.length)b.append(el('p','Chưa có đề xuất thay đổi lịch.','hint'));
+  const labels={pending:'Chờ xác nhận',deferred:'Để sau',accepted:'Đã đồng ý',rejected:'Đã từ chối',superseded:'Đã có phiên bản mới hơn'};
+  for(const p of data.items){
+    const row=el('div',undefined,'entry proposal');row.append(el('strong',p.title+' · '+labels[p.state]),el('p','Bản lịch '+p.revision+' · '+p.year+' / '+p.method,'hint'));
+    const dates=el('div',undefined,'proposal-dates');
+    const old=el('div');old.append(el('strong','Lịch trước'),el('p',p.old_starts===null?'Mốc mới, chưa có lịch cũ':timeText(p.old_starts)+' → '+timeText(p.old_ends)));
+    const next=el('div');next.append(el('strong','Lịch chính thức mới'),el('p',timeText(p.new_starts)+' → '+timeText(p.new_ends)));
+    dates.append(old,next);row.append(dates,sourceLink(p.source_url));
+    if(p.state==='pending'||p.state==='deferred'){
+      row.append(el('p','Chỉ khi đồng ý, kế hoạch cá nhân và lời nhắc mới chuyển sang mốc mới.','hint'));
+      for(const o of p.offsets){
+        const prior=o.edge==='start'?p.old_starts:p.old_ends,after=o.edge==='start'?p.new_starts:p.new_ends;
+        row.append(el('p',(o.edge==='start'?'Mở':'Đóng')+' · '+o.days_before+' ngày: '+(prior===null?'—':timeText(prior-o.days_before*86400))+' → '+timeText(after-o.days_before*86400),'hint'));
+      }
+      for(const [title,decision] of [['Đồng ý cập nhật','accepted'],['Không cập nhật','rejected'],['Để sau','deferred']]){
+        const btn=button(title,async()=>{
+          await api('/calendar/proposals/'+p.id+'/decision',{method:'POST',body:{decision}});
+          flash(decision==='accepted'?'Đã cập nhật kế hoạch. Các mốc nhắc đã qua không được gửi bù.':decision==='rejected'?'Đã giữ kế hoạch cũ; hãy đối chiếu hạn chính thức.':'Đã lưu đề xuất để xử lý sau.');
+          await loadCalendar();await refreshNotices();
+        },decision==='accepted'?'':'secondary');btn.dataset.decision=decision;row.append(btn);
+      }
+    }else if(p.state==='rejected')row.append(el('p','Giữ kế hoạch đã lưu; luôn kiểm tra hạn chính thức mới nhất.','plan-warning'));
+    if(p.history.length){const d=el('details');d.append(el('summary','Lịch sử quyết định'));for(const x of p.history)d.append(el('p',labels[x.decision]+' · '+timeText(x.created_at),'hint'));row.append(d);}
+    b.append(row);
+  }
+}
 async function refreshNotices(){const b=$('notices');b.replaceChildren();$('nav-notices').hidden=!user;$('read-all').hidden=!user;if(!user){b.append(el('p','Đăng nhập để xem thông báo của bạn.','hint'));return;}
   const d=await api('/calendar/notices');if(!d.items.length)b.append(el('p','Chưa có thông báo.','hint'));
   $('unread-count').textContent=d.unread?'('+d.unread+')':'';
-  for(const n of d.items){const item=el('div',undefined,'entry'+(!n.read_at?' unread':''));item.append(el('strong',(!n.read_at?'● ':'')+n.title),el('p',timeText(n.created_at),'hint'),button('Xem sự kiện',async()=>{await api('/calendar/notices/'+n.id+'/read',{method:'POST',body:{}});await refreshNotices();await openNoticeEvent(n.event_id);}),button('Đã đọc',async()=>{await api('/calendar/notices/'+n.id+'/read',{method:'POST',body:{}});await refreshNotices();}));b.append(item);}
+  for(const n of d.items){const item=el('div',undefined,'entry'+(!n.read_at?' unread':''));item.append(el('strong',(!n.read_at?'● ':'')+n.title),el('p',timeText(n.created_at),'hint'),button('Xem sự kiện',async()=>{await api('/calendar/notices/'+n.id+'/read',{method:'POST',body:{}});await refreshNotices();if(n.kind==='change'){await refreshProposals();$('personal-plans-panel').scrollIntoView({behavior:'smooth'});}else await openNoticeEvent(n.event_id);}),button('Đã đọc',async()=>{await api('/calendar/notices/'+n.id+'/read',{method:'POST',body:{}});await refreshNotices();}));b.append(item);}
 }
 $('read-all').onclick=()=>safe(async()=>{await api('/calendar/notices/read-all',{method:'POST',body:{}});await refreshNotices();});
 $('nav-notices').onclick=()=>setTimeout(()=>$('notices').scrollIntoView({behavior:'smooth'}),350);
@@ -287,4 +333,4 @@ async function loadAdmin(){if(user?.role!=='admin')return;await Promise.all([loa
 $('source-form').onsubmit=e=>{e.preventDefault();safe(async()=>{await api('/admin/monitor/sources',{method:'POST',body:fields(e.target)});e.target.reset();await loadAdminChanges();flash('Đã thêm nguồn. Worker sẽ kiểm tra ở lượt tiếp theo.');});};
 $('refresh-admin').onclick=()=>safe(loadAdmin);
 safe(async()=>{await refreshUser();await showPage();const id=new URLSearchParams(location.search).get('event');if(id&&location.hash==='#calendar')await openNoticeEvent(id);});
-setInterval(()=>{if(user&&location.hash==='#calendar')safe(refreshNotices);},60000);
+setInterval(()=>{if(user&&location.hash==='#calendar')safe(async()=>{await refreshNotices();await refreshProposals();});},60000);
