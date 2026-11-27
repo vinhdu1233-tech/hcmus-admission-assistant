@@ -356,7 +356,7 @@ $('official-form').onsubmit=e=>{e.preventDefault();safe(async()=>{const d=fields
 async function reviewCandidate(c){
  const b=$('candidate-review');b.replaceChildren();
  b.append(el('p','Kiểm tra nội dung gốc và xác nhận đầy đủ trước khi công bố.','hint'),sourceLink(c.url),el('pre',c.evidence,'review-evidence'),el('p',c.precision_note,'plan-warning'));
- const f=el('form',undefined,'review-form');
+ const f=el('form',undefined,'review-form'),errorBox=el('p','','review-error');errorBox.hidden=true;
  function field(title,name,type,value){const l=el('label',title),n=document.createElement(type==='textarea'?'textarea':'input');n.name=name;if(type!=='textarea')n.type=type;n.value=value??'';n.required=name!=='note';if(name==='title')n.maxLength=160;if(name==='note')n.maxLength=500;l.append(n);f.append(l);return n;}
  const choose=el('label','Công bố vào sự kiện');const sel=document.createElement('select');sel.name='id';sel.append(new Option('Thêm mốc mới',''));
  const data=await api('/calendar?year='+c.year+'&method=all');
@@ -365,11 +365,11 @@ async function reviewCandidate(c){
  field('Năm tuyển sinh','year','number',c.year).readOnly=true;field('Phương thức','method','text',c.method).readOnly=true;field('Tiêu đề','title','text',c.title);
  field('Bắt đầu (giờ Việt Nam)','start','datetime-local',c.starts===null?'':localInput(c.starts));field('Kết thúc (giờ Việt Nam)','end','datetime-local',localInput(c.ends));field('Ghi chú / điều kiện','note','textarea',c.precision_note);
  const check=el('label',undefined,'check review-confirm'),input=document.createElement('input');input.type='checkbox';input.required=true;check.append(input,document.createTextNode('Tôi đã đọc nguồn, xác nhận đối tượng, ngày giờ và chọn đúng sự kiện mới / cũ.'));f.append(check);
- const actions=el('div',undefined,'controls'),submit=el('button','Xác minh & công bố');submit.type='submit';actions.append(submit,button('Hủy — chưa quyết định',()=>$('candidate-dialog').close()));f.append(actions);
- f.onsubmit=e=>{e.preventDefault();safe(async()=>{submit.disabled=true;try{const d=fields(f);d.id=d.id||null;d.year=Number(d.year);d.start=dateISO(d.start);d.end=dateISO(d.end);d.source_url=c.url;
+ const actions=el('div',undefined,'controls'),submit=el('button','Xác minh & công bố');submit.type='submit';actions.append(submit,button('Hủy — chưa quyết định',()=>$('candidate-dialog').close()));f.append(errorBox,actions);
+ f.onsubmit=e=>{e.preventDefault();safe(async()=>{submit.disabled=true;errorBox.hidden=true;try{const d=fields(f);d.id=d.id||null;d.year=Number(d.year);d.start=dateISO(d.start);d.end=dateISO(d.end);d.source_url=c.url;
   await api('/admin/monitor/candidates/'+c.id+'/publish',{method:'POST',body:d});
   $('candidate-dialog').close();flash('✓ Đã xác minh và công bố lịch.');await Promise.all([loadCandidates(),loadOfficialEvents()]);
- }finally{submit.disabled=false;}});};
+ }catch(err){errorBox.textContent=err.message;errorBox.hidden=false;}finally{submit.disabled=false;}});};
  b.append(f);$('candidate-dialog').showModal();
 }
 async function loadCandidates(){

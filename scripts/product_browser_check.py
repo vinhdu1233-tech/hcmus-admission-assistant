@@ -109,6 +109,19 @@ def main():
         actual=student.request.get(BASE+"/api/product/calendar?year=2026&method=all").json()["reminders"]
         assert {(x["edge"],x["days_before"]) for x in actual if x["event_id"]==e["id"]}=={("start",7),("start",4),("end",7),("end",4)}
         result.append("personal_event_and_start_end_reminders")
+        for n in range(4):
+            rr=student.request.post(BASE+"/api/product/calendar/personal",data={"title":f"TEST overflow {n}","start":future.isoformat(),"end":future.isoformat()});assert rr.ok,rr.text()
+        page.reload(wait_until="domcontentloaded")
+        page.locator("#calendar-search").fill("TEST overflow")
+        expect(page.locator(".more-events").first).to_be_visible()
+        page.locator(".more-events").first.click()
+        expect(page.locator("#day-dialog")).to_be_visible()
+        expect(page.locator("#day-dialog-list .event-row")).to_have_count(4)
+        page.locator("#day-dialog-list .event-row").last.click()
+        expect(page.locator("#detail-dialog")).to_be_visible()
+        page.locator("[data-close=detail-dialog]").click()
+        page.locator("#calendar-search").fill("")
+        result.append("calendar_overflow_popup")
         assert student.request.get(BASE+"/api/product/admin/questions").status==403
         result.append("student_admin_api_denied")
         page.screenshot(path=str(OUT/"calendar.png"),full_page=True)
@@ -153,6 +166,24 @@ def main():
         ap.goto(BASE+"/",wait_until="domcontentloaded")
         expect(ap.locator(".desktop-nav")).to_contain_text("Dashboard")
         result.append("role_based_main_navigation")
+        from src.product_worker import save_snapshot
+        from src.product_seed import S1
+        save_snapshot(S1,"TEST approval: Từ 8 giờ ngày 10/12/2026 đến 17 giờ ngày 25/12/2026, nộp hồ sơ phương thức 1a.")
+        ap.goto(BASE+"/portal.html#dashboard",wait_until="domcontentloaded")
+        candidate=ap.locator(".candidate-card.pending").filter(has_text="TEST approval").first
+        candidate.get_by_role("button",name="Điền vào form để kiểm chứng").click()
+        expect(ap.locator("#candidate-dialog")).to_be_visible()
+        ap.locator("#candidate-review input[name=title]").fill("TEST published through modal")
+        ap.locator("#candidate-review input[type=checkbox]").check()
+        ap.get_by_role("button",name="Xác minh & công bố").click()
+        expect(ap.locator("#candidate-dialog")).to_be_hidden()
+        expect(ap.locator(".candidate-card.reviewed").filter(has_text="TEST approval")).to_be_visible()
+        save_snapshot(S1,"TEST rejection: Từ 8 giờ ngày 10/12/2026 đến 17 giờ ngày 30/12/2026, nộp hồ sơ phương thức 1a.")
+        ap.locator("#refresh-admin").click()
+        ap.on("dialog",lambda dialog:dialog.accept())
+        ap.locator(".candidate-card.pending").filter(has_text="TEST rejection").get_by_role("button",name="Từ chối đề xuất").click()
+        expect(ap.locator(".candidate-card.rejected").filter(has_text="TEST rejection")).to_be_visible()
+        result.append("admin_review_modal_approval_and_rejection")
         # Exercise three actual proposal buttons in student browser.
         page.goto(BASE+"/portal.html#calendar",wait_until="domcontentloaded")
         page.locator("#year").select_option("2026");page.locator("#method").select_option("1a")

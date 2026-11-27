@@ -175,6 +175,7 @@ async function sendQuestion(raw) {
   try{
     const data=await askServer(question);
     pending.remove();appendMessage(data.answer,'bot',{status:data.status,sources:data.sources});
+    const option=historySelect.selectedOptions[0];if(option?.textContent==='Cuộc trò chuyện mới')option.textContent=question.slice(0,80);
     updateStatus(mode==='demo'?'DEMO MODE · Đây là phản hồi mô phỏng, không phải kết quả truy xuất tuyển sinh.':'API MODE · Hãy đối chiếu nguồn và năm áp dụng.');
   }catch(err){
     pending.remove();
