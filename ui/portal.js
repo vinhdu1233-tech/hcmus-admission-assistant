@@ -33,7 +33,7 @@ document.querySelectorAll('[data-auth-tab]').forEach(b=>b.onclick=()=>showAuthTa
 showAuthTab('login');
 async function refreshUser(){
   user=(await api('/auth/me')).user;
-  $('nav-dashboard').hidden=user?.role!=='admin';$('nav-account').textContent=user?'Tài khoản':'Đăng nhập';
+  $('nav-dashboard').hidden=user?.role!=='admin';$('nav-notices').hidden=!user;if(user){const n=await api('/calendar/notices');$('unread-count').textContent=n.unread?'('+n.unread+')':'';}$('nav-account').textContent=user?'Tài khoản':'Đăng nhập';
   $('signed-in').hidden=!user;$('auth-forms').hidden=!!user;
   if(user){$('account-name').textContent=user.username;$('account-role').textContent=user.role==='admin'?'Quản trị viên (Admin)':'Học sinh (Student)';}
 }

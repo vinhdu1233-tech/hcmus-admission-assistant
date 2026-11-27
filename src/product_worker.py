@@ -44,7 +44,18 @@ def save_snapshot(url,content,now=None):
                 delta=list(difflib.unified_diff(last["content"].split(),content.split(),n=2))
                 summary="\n".join(delta[:120])[:1200] or "Source content changed."
                 c.execute("INSERT INTO changes(url,previous_id,current_id,summary,detected_at) VALUES (?,?,?,?,?)",(url,last["id"],ident,summary,now))
+        if '/danh-muc/' in url:discover_sources(c,content)
         c.execute("UPDATE monitor_sources SET checked_at=?,successful_at=?,last_digest=?,last_error=NULL WHERE url=?",(now,now,digest,url))
+def discover_sources(c,content):
+    # Only official dated admission notice article URLs, not arbitrary external links.
+    import re
+    links=set(re.findall(r"https://tuyensinh\.hcmus\.edu\.vn/20\d{2}-[a-z0-9-]+/",content))
+    count=c.execute("SELECT COUNT(*) FROM monitor_sources").fetchone()[0]
+    for url in sorted(links):
+        if count>=30:break
+        if not any(k in url for k in ("thong-bao","diem-chuan","thong-tin-tuyen-sinh")):continue
+        label=url.rstrip("/").split("/")[-1].replace("-"," ")
+        count+=c.execute("INSERT OR IGNORE INTO monitor_sources(url,label) VALUES (?,?)",(url,label)).rowcount
 def poll_sources():
     now=time.time();interval=max(3600,int(os.getenv("MONITOR_INTERVAL_HOURS","24"))*3600)
     with db() as c:due=c.execute("SELECT url FROM monitor_sources WHERE checked_at IS NULL OR checked_at<=?",(now-interval,)).fetchall()

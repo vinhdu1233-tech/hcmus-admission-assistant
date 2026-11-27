@@ -235,6 +235,7 @@ class ChecklistTask(BaseModel):
     title:StrictStr=Field(min_length=1,max_length=200)
     done:bool
 class ChecklistBody(BaseModel):
+    account_id:StrictInt|None=None
     year:StrictInt=Field(ge=2025,le=2100)
     method:StrictStr=Field(pattern=r"^(1a|1b|1c|1d|2|3)$")
     path:StrictStr=Field(default="",max_length=32)
@@ -242,6 +243,7 @@ class ChecklistBody(BaseModel):
 @router.put("/calendar/checklist")
 def save_checklist(body:ChecklistBody,request:Request):
     uid=require_user(request)["id"]
+    if body.account_id is not None and body.account_id!=uid:error(409,"Phiên tài khoản đã thay đổi.")
     if len({t.id for t in body.tasks})!=len(body.tasks):error(400,"Trùng công việc.")
     with db(True) as c:c.execute("""INSERT INTO checklist_progress VALUES (?,?,?,?,?,?)
       ON CONFLICT(user_id,year,method,path) DO UPDATE SET tasks=excluded.tasks,updated_at=excluded.updated_at""",

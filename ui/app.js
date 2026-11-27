@@ -367,7 +367,7 @@ function planPayload(){
 }
 async function sendPlan(payload,expected){
  const u=await accountNow();if(!u||u.id!==expected)throw Error('Phiên tài khoản đã thay đổi');
- const r=await fetch('/api/product/calendar/checklist',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ const r=await fetch('/api/product/calendar/checklist',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,account_id:expected})});
  if(!r.ok)throw Error('Không lưu được checklist lên tài khoản');
  planner.saved.textContent='ĐÃ LIÊN KẾT VỚI LỊCH TÀI KHOẢN';
 }

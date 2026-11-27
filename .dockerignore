@@ -1,0 +1,10 @@
+.git
+.venv
+.env
+.env.*
+*.sqlite*
+*.db
+*.pem
+__pycache__
+node_modules
+product-browser-evidence
