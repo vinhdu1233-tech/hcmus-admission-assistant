@@ -127,3 +127,5 @@ Các kịch bản xác nhận:
 
 ## Account, Admin and Smart Admission Calendar (Week 1)
 See [Week 1 product setup and acceptance](docs/WEEK1_PRODUCT_SETUP.md) for local MailHog, OTP, Admin setup, calendar, source-monitoring worker and mobile Web Push configuration.
+
+Docker local: [Run the entire local stack](docs/DOCKER_LOCAL.md). Includes MailHog and persistent dev keys.

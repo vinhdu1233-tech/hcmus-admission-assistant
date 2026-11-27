@@ -25,3 +25,6 @@ Dockerfile and compose.product.yml package API, Node and ONE worker. Create .env
 - https://tuyensinh.hcmus.edu.vn/2026-thong-bao-mo-cong-nop-ho-so-minh-chung/
 - https://tuyensinh.hcmus.edu.vn/2026-thong-bao-ve-phuong-thuc-xet-tuyen-2/
 - https://tuyensinh.hcmus.edu.vn/2026-thong-bao-thoi-gian-cong-bo-ket-qua-va-thong-tin-lien-quan-den-nhap-hoc/
+
+## Per-user calendar approval
+Official dates change immediately after admin verification. Existing personal plans and reminders stay pinned to the last accepted revision. New followed events create proposals, but no personal plan until acceptance. Accept preserves reminder offsets, cancels pending deliveries for the old revision and skips elapsed reminder times. Reject preserves the previous schedule; defer stays actionable. Old-schedule reminders are visibly labelled, proposals superseded by newer official revisions cannot be accepted, and decisions are recorded per user. No calendar export.
