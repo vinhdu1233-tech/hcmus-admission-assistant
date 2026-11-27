@@ -12,9 +12,9 @@ Scope: HCMUS Guide, PR #14. No Apple/Google/Outlook export or synchronization.
 | Dimension | SLI | Proposed target | Evidence |
 |---|---|---|---|
 | Correctness | Explicit ranges correctly extracted and unsafe proposals withheld | 100% of supported acceptance fixtures; zero unreviewed publication | tests/test_feature4.py |
-| Latency | p95 calendar API response in localhost | <= 500 ms on 50 requests | run benchmark on frozen build |
-| Stability | Fault-free scheduler cycles, duplicate logical notices | >=99/100 cycles, zero duplicate notices for same event revision | repeated controlled clock tests |
-| Capacity | 3 authenticated users with isolated plans | all 3 receive only their own data | integration simulation |
+| Latency | p95 calendar API response in localhost | <= 500 ms on 50 requests | scripts/f4_acceptance_metrics.py; 50 real localhost requests |
+| Stability | Fault-free scheduler cycles, duplicate logical notices | >=99/100 cycles, zero duplicate notices for same event revision | scripts/f4_acceptance_metrics.py; 100 controlled cycles |
+| Capacity | 3 authenticated users with isolated plans | all 3 receive only their own data | scripts/f4_acceptance_metrics.py; 30 requests across 3 authenticated clients |
 | Delivery | Physical device receipt within 2 minutes under test conditions | proposed, not yet established | actual iOS/Android test |
 Human usability: observe at least five students performing filter, add event, set both reminder offsets and locate official source. Record unassisted task completion. Do not present browser automation as real student evidence.
 
