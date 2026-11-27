@@ -58,7 +58,7 @@ $('register-form').addEventListener('submit',event=>{event.preventDefault();safe
   await api('/auth/register',{method:'POST',body:fields(event.target)});event.target.reset();showAuthTab('login');flash('Đăng ký thành công. Hãy đăng nhập.');
 });});
 $('reset-form').addEventListener('submit',event=>{event.preventDefault();safe(async()=>{
-  await api('/auth/reset',{method:'POST',body:fields(event.target)});event.target.reset();announceAccountChange();location.replace('/portal.html#account');
+  await api('/auth/reset',{method:'POST',body:fields(event.target)});event.target.reset();announceAccountChange();location.hash='account';location.reload();
 });});
 document.querySelectorAll('[data-send-code]').forEach(b=>b.addEventListener('click',()=>safe(async()=>{
   const f=b.closest('form'),email=f.elements.email;if(!email.reportValidity())return;
@@ -313,8 +313,8 @@ async function refreshProposals(){
     b.append(row);
   }
 }
-async function refreshNotices(){const b=$('notices');b.replaceChildren();$('nav-notices').hidden=!user;$('read-all').hidden=!user;if(!user){b.append(el('p','Đăng nhập để xem thông báo của bạn.','hint'));return;}
-  const owner=user.id;const d=await api('/calendar/notices');if(user?.id!==owner)return;if(!d.items.length)b.append(el('p','Chưa có thông báo.','hint'));
+async function refreshNotices(){const b=$('notices');$('nav-notices').hidden=!user;$('read-all').hidden=!user;if(!user){b.replaceChildren(el('p','Đăng nhập để xem thông báo của bạn.','hint'));$('notice-total').textContent='';return;}
+  const owner=user.id;const d=await api('/calendar/notices');if(user?.id!==owner)return;b.replaceChildren();$('notice-total').textContent=d.unread?d.unread+' chưa đọc':'Đã đọc hết';if(!d.items.length)b.append(el('p','Chưa có thông báo.','hint'));
   $('unread-count').textContent=d.unread?'('+d.unread+')':'';
   for(const n of d.items){const item=el('div',undefined,'entry'+(!n.read_at?' unread':''));item.append(el('span',n.kind==='announcement'?'Thông báo tuyển sinh':n.kind==='change'?'Cập nhật lịch':'Nhắc lịch','notice-type'),el('strong',(!n.read_at?'● ':'')+n.title),el('p',timeText(n.created_at),'hint'),button('Xem sự kiện',async()=>{await api('/calendar/notices/'+n.id+'/read',{method:'POST',body:{}});await refreshNotices();if(n.kind==='change'){await refreshProposals();$('personal-plans-panel').scrollIntoView({behavior:'smooth'});}else await openNoticeEvent(n.event_id);}),button('Đã đọc',async()=>{await api('/calendar/notices/'+n.id+'/read',{method:'POST',body:{}});await refreshNotices();}));b.append(item);}
 }
@@ -378,7 +378,7 @@ async function reviewCandidate(c){
 }
 async function loadCandidates(){
  const d=await api('/admin/monitor/candidates?history=true'),b=$('deadline-candidates');b.replaceChildren();
- const pending=d.items.filter(c=>c.state==='pending'),history=d.items.filter(c=>c.state!=='pending');
+ const pending=d.items.filter(c=>c.state==='pending'),history=d.items.filter(c=>c.state!=='pending');$('admin-pending-badge').textContent=pending.length;
  b.append(el('h3','Chờ xử lý · '+pending.length,'candidate-section-title'));
  if(!pending.length)b.append(el('p','Không có đề xuất chờ xử lý.','empty-state'));
  function card(c){
@@ -393,15 +393,43 @@ async function loadCandidates(){
 }
 async function loadAdminChanges(){
   const data=await api('/monitor');$('official-source').replaceChildren(...data.sources.map(s=>new Option(s.label,s.url)));
+  const status=$('admin-source-status');status.replaceChildren(el('h2','Trạng thái nguồn'));for(const source of data.sources){const row=el('div',undefined,'entry');row.append(sourceLink(source.url,source.label),el('p',source.last_error?'Kiểm tra thất bại: '+source.last_error:source.successful_at?'Đã kiểm tra '+timeText(source.successful_at):'Chờ kiểm tra lần đầu','hint'));status.append(row);}
   await loadCandidates();const b=$('admin-changes');b.replaceChildren();b.append(el('h3','Lịch sử thay đổi nguồn'));
   for(const c of data.changes){const n=el('div',undefined,'entry');n.append(el('strong',c.reviewed_at?'Đã kiểm duyệt':'Chờ kiểm duyệt'),el('p',c.summary,'hint'),sourceLink(c.url));
     if(!c.reviewed_at)n.append(button('Ghi nhận đã kiểm duyệt',async()=>{const note=prompt('Kết quả đối chiếu (nếu đổi ngày, cập nhật lịch ở trên trước):');if(!note?.trim())return;await api('/admin/monitor/'+c.id+'/review',{method:'POST',body:{note}});await loadAdminChanges();}));b.append(n);
   }
 }
-async function loadAdmin(){if(user?.role!=='admin')return;await Promise.all([loadQuestions(),loadUsers(),loadOfficialEvents(),loadAdminChanges()]);}
+const adminTabs={
+ overview:['Tổng quan vận hành','Theo dõi hoạt động, kiểm duyệt thông tin và quản lý tài khoản.'],
+ questions:['Nhật ký câu hỏi','Tìm kiếm và phân tích các câu hỏi trong 30 ngày gần nhất.'],
+ users:['Quản lý tài khoản','Theo dõi trạng thái và quản lý khóa tài khoản.'],
+ review:['Kiểm duyệt deadline','Kiểm tra bằng chứng, công bố lịch và xem lịch sử xử lý.'],
+ official:['Lịch chính thức','Quản lý mốc tuyển sinh đã xác minh.'],
+ sources:['Nguồn theo dõi','Quản lý nguồn, trạng thái kiểm tra và lịch sử thay đổi.']
+};
+let adminTab='overview';
+function selectAdminTab(tab,scroll=true){
+ if(!adminTabs[tab])tab='overview';adminTab=tab;
+ for(const k of Object.keys(adminTabs))$('admin-view-'+k).hidden=k!==tab;
+ for(const b of document.querySelectorAll('[data-admin-tab]')){b.classList.toggle('active',b.dataset.adminTab===tab);if(b.dataset.adminTab===tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');}
+ $('admin-heading').textContent=adminTabs[tab][0];$('admin-description').textContent=adminTabs[tab][1];$('admin-breadcrumb').textContent=adminTabs[tab][0].toLocaleUpperCase('vi');
+ if(scroll)window.scrollTo({top:0,behavior:'instant'});
+}
+document.querySelectorAll('[data-admin-tab],[data-admin-go]').forEach(b=>b.addEventListener('click',()=>safe(async()=>{selectAdminTab(b.dataset.adminTab||b.dataset.adminGo);if(adminTab==='review'||adminTab==='sources')await loadAdminChanges();else if(adminTab==='overview')await loadOverview();})));
+async function loadOverview(){
+ const d=await api('/admin/overview');$('admin-pending-badge').textContent=d.pending;
+ const b=$('admin-summary');b.replaceChildren();
+ for(const [label,value,tab,icon] of [['Học sinh',d.students,'users','◎'],['Câu hỏi / 30 ngày',d.questions,'questions','≡'],['Chờ kiểm duyệt',d.pending,'review','✓'],['Tài khoản bị khóa',d.locked,'users','!'],['Mốc tuyển sinh',d.official,'official','▣'],['Nguồn theo dõi',d.sources,'sources','↗']]){
+  const card=button('',()=>{selectAdminTab(tab);},'admin-stat');card.append(el('span',icon,'stat-icon'),el('span',label,'stat-label'),el('strong',String(value)),el('small','Xem chi tiết →'));b.append(card);
+ }
+ const stats=await api('/admin/questions?limit=1'),chart=$('admin-intent-chart');chart.replaceChildren();
+ if(!stats.by_intent.length)chart.append(el('p','Chưa có dữ liệu câu hỏi.','empty-state'));
+ for(const item of stats.by_intent){const row=el('div',undefined,'intent-row'),head=el('div',undefined,'intent-head'),track=el('div',undefined,'intent-track'),fill=el('div',undefined,'intent-fill');head.append(el('span',item.intent),el('strong',String(item.total)));fill.style.width=(100*item.total/Math.max(1,stats.total))+'%';track.append(fill);row.append(head,track);chart.append(row);}
+}
+async function loadAdmin(){if(user?.role!=='admin')return;$('admin-username').textContent=user.username;selectAdminTab(adminTab,false);await Promise.all([loadOverview(),loadQuestions(),loadUsers(),loadOfficialEvents(),loadAdminChanges()]);}
 $('source-form').onsubmit=e=>{e.preventDefault();safe(async()=>{await api('/admin/monitor/sources',{method:'POST',body:fields(e.target)});e.target.reset();await loadAdminChanges();flash('Đã thêm nguồn. Worker sẽ kiểm tra ở lượt tiếp theo.');});};
 $('refresh-admin').onclick=()=>safe(loadAdmin);
-safe(async()=>{await refreshUser();await showPage();const id=new URLSearchParams(location.search).get('event');if(id&&location.hash==='#calendar')await openNoticeEvent(id);});
+safe(async()=>{await refreshUser();await showPage();const params=new URLSearchParams(location.search),id=params.get('event');if(id&&location.hash==='#calendar')await openNoticeEvent(id);if(params.has('notices')&&location.hash==='#calendar')$('notices').scrollIntoView({behavior:'smooth'});});
 let backgroundBusy=false;
 async function refreshAccountAndNotices(){
  if(backgroundBusy||document.hidden)return;backgroundBusy=true;
