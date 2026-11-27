@@ -45,7 +45,8 @@ test('HCMUS Guide serves all three features and starts a new browser conversatio
     const script=await get('/app.js');
     assert.ok(script.includes("from './admission-methods.js'"),'Checklist module not loaded');
     assert.ok(script.includes("125000"),'Local Ollama frontend timeout too short');
-    assert.ok(script.includes('/api/conversation/reset'),'New conversation missing');
+    assert.ok(script.includes('/api/product/chat/threads'),'Account conversation archive missing');
+    assert.ok(html.includes('id="chat-history"'),'History selector missing');
     assert.ok(script.includes("updateMethods('2')"),'Checklist init missing');
 
     const methods=await get('/admission-methods.js');

@@ -53,7 +53,10 @@ jobs:
           REQUIRE_ACCOUNT_CHAT=1 python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 > /tmp/week1-api.log 2>&1 &
           PORT=5501 CHAT_MODE=api API_ORIGIN=http://127.0.0.1:8000 node ui/server.mjs > /tmp/week1-node.log 2>&1 &
           python -m scripts.product_browser_check
-          python scripts/f1_slo_regression.py
+          # Isolated legacy F1 benchmark: product API stays authenticated on port 8000.
+          REQUIRE_ACCOUNT_CHAT=0 python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8001 > /tmp/week1-f1-api.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:8001/health && break; sleep 1; done
+          F1_BENCHMARK_URL=http://127.0.0.1:8001/chat python scripts/f1_slo_regression.py
           python -m scripts.f4_acceptance_metrics
       - name: Upload browser evidence
         if: always()

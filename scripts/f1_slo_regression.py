@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SEED = json.loads((ROOT / "data/curated/majors_2026.json").read_text(encoding="utf-8"))
 PROGRAMS = SEED["majors"]
 KNOWN_CODES = {p["code"] for p in PROGRAMS}
-URL = "http://127.0.0.1:8000/chat"
+URL = os.getenv("F1_BENCHMARK_URL", "http://127.0.0.1:8000/chat")
 MAIN_SOURCE = SEED["source"]["url"]
 
 PROGRAM_QUESTIONS = [
