@@ -168,11 +168,19 @@ def _explain_openai(question: str, candidates: list[dict]) -> dict[str, str] | N
 
 
 
+def ollama_generate_url():
+    """Only local native, Docker Desktop host, or same-container Ollama."""
+    base = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").strip().rstrip("/")
+    if base not in ("http://127.0.0.1:11434", "http://host.docker.internal:11434"):
+        return None
+    return base + "/api/generate"
+
+
 def _explain_ollama(question: str, candidates: list[dict]) -> dict[str, str] | None:
     """Query only local Ollama; never send student questions to an online endpoint.
 
-    qwen3:4b supports Ollama JSON schemas. Keep the URL loopback-only to
-    avoid accidentally disclosing data outside the user's own machine.
+    qwen3:4b supports Ollama JSON schemas. Allow only loopback or the
+    Docker Desktop host alias; never send student questions to remote URLs.
     """
     from urllib import error, request
 
@@ -213,14 +221,21 @@ def _explain_ollama(question: str, candidates: list[dict]) -> dict[str, str] | N
         "think": False,
         "options": {"temperature": 0.2, "num_predict": 350},
     }
+    url = ollama_generate_url()
+    if not url:
+        return None
     req = request.Request(
-        "http://127.0.0.1:11434/api/generate",
+        url,
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         headers={"Content-Type": "application/json"},
         method="POST",
     )
     try:
-        with request.urlopen(req, timeout=100) as response:
+        class NoRedirect(request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                return None
+        opener = request.build_opener(request.ProxyHandler({}), NoRedirect())
+        with opener.open(req, timeout=100) as response:
             if response.status != 200:
                 return None
             # Restrict parsing to 64 KiB, with explicit cap for malformed output.
