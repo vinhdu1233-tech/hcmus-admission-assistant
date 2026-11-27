@@ -124,3 +124,8 @@ Các kịch bản xác nhận:
 - [Kiểm tra 3 Features](README_MVP_3_TASKS.md)
 
 **Nguồn chính:** https://tuyensinh.hcmus.edu.vn/ và các website khoa trực thuộc HCMUS.
+
+## Account, Admin and Smart Admission Calendar (Week 1)
+See [Week 1 product setup and acceptance](docs/WEEK1_PRODUCT_SETUP.md) for local MailHog, OTP, Admin setup, calendar, source-monitoring worker and mobile Web Push configuration.
+
+Docker local: [Run the entire local stack](docs/DOCKER_LOCAL.md). Includes MailHog and persistent dev keys.

@@ -17,12 +17,14 @@ const CONTENT_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
 };
 
 function json(res, status, value, extraHeaders={}) {
@@ -69,6 +71,7 @@ function conversationSession(req) {
 }
 
 async function handleChat(req, res) {
+  if(!sameOrigin(req)) return json(res,403,safeError('CROSS_ORIGIN','Cross-origin request blocked.'));
   let body;
   try {body=await readBody(req);} catch(err) {
     return json(res,400,safeError('INVALID_JSON',err.message==='BODY_TOO_LARGE'?'Dữ liệu gửi lên quá lớn.':'JSON không hợp lệ.'));
@@ -85,7 +88,7 @@ async function handleChat(req, res) {
   body.conversation_id=session.id;
   try {
     const upstream = await fetch(new URL('/chat',API_ORIGIN), {
-      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(130000),
+      method:'POST',headers:{'Content-Type':'application/json',Cookie:String(req.headers.cookie||'')},body:JSON.stringify(body),signal:AbortSignal.timeout(130000),
     });
     const text = await upstream.text();
     let data;
@@ -101,12 +104,13 @@ async function handleChat(req, res) {
 // Explicitly reset the context for the current browser only.
 // The same HttpOnly session ID is forwarded to FastAPI's existing reset action.
 async function handleConversationReset(req,res) {
+  if(!sameOrigin(req)) return json(res,403,{ok:false,message:'Cross-origin request blocked.'});
   const session=conversationSession(req);
   if (MODE === 'demo') return json(res,200,{ok:true},session.headers);
   try {
     const upstream=await fetch(new URL('/chat',API_ORIGIN),{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json',Cookie:String(req.headers.cookie||'')},
       body:JSON.stringify({message:'bắt đầu lại',conversation_id:session.id}),
       signal:AbortSignal.timeout(10000),
     });
@@ -117,11 +121,49 @@ async function handleConversationReset(req,res) {
   }
 }
 
+
+function sameOrigin(req) {
+  if(req.headers['sec-fetch-site']==='cross-site') return false;
+  if(!req.headers.origin) return true; // local CLI/test clients
+  const expected=process.env.PUBLIC_ORIGIN||('http://'+req.headers.host);
+  try{return new URL(req.headers.origin).origin===new URL(expected).origin;}
+  catch{return false;}
+}
+async function handleProduct(req,res,url) {
+  if(MODE!=='api') return json(res,503,{detail:'Hãy khởi chạy FastAPI và Node với CHAT_MODE=api.'});
+  if(!['GET','POST','PUT','DELETE'].includes(req.method)) return json(res,405,{detail:'Method not allowed.'});
+  if(req.method!=='GET'&&!sameOrigin(req)) return json(res,403,{detail:'Cross-origin request blocked.'});
+  const headers={'Accept':'application/json',Cookie:String(req.headers.cookie||'')};
+  let body;
+  if(req.method==='POST'||req.method==='PUT') {
+    if(!String(req.headers['content-type']||'').toLowerCase().startsWith('application/json')) return json(res,415,{detail:'JSON required.'});
+    try{body=JSON.stringify(await readBody(req));headers['Content-Type']='application/json';}
+    catch{return json(res,400,{detail:'JSON không hợp lệ hoặc quá lớn.'});}
+  }
+  try {
+    const upstream=await fetch(new URL(url.pathname.slice(4)+url.search,API_ORIGIN),{
+      method:req.method,headers,body,redirect:'error',signal:AbortSignal.timeout(30000)
+    });
+    const data=await upstream.json();
+    const extra={};
+    const cookies=upstream.headers.getSetCookie?.()||[upstream.headers.get('set-cookie')].filter(Boolean);
+    if(upstream.ok&&req.method==='POST'&&['/api/product/auth/login','/api/product/auth/logout','/api/product/auth/reset'].includes(url.pathname)) {
+      cookies.push('hcmus_sid=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax'+(process.env.COOKIE_SECURE==='1'?'; Secure':''));
+    }
+    if(cookies.length)extra['Set-Cookie']=cookies;
+    return json(res,upstream.status,data,extra);
+  } catch(e) {
+    console.error('[HCMUS Guide] Product API failed:',e.name||'Error');
+    return json(res,503,{detail:'Không kết nối được dịch vụ tài khoản/lịch.'});
+  }
+}
+
 const server = http.createServer(async (req,res) => {
   const url = new URL(req.url || '/',`http://localhost:${PORT}`);
-  if (url.pathname === '/api/config' && req.method === 'GET') return json(res,200,{mode:MODE,version:'1.0.0'});
+  if (url.pathname === '/api/config' && req.method === 'GET') return json(res,200,{mode:MODE,version:'1.1.0',release:'workspace-r2'});
   if (url.pathname === '/api/chat' && req.method === 'POST') return handleChat(req,res);
   if (url.pathname === '/api/conversation/reset' && req.method === 'POST') return handleConversationReset(req,res);
+  if (url.pathname.startsWith('/api/product/')) return handleProduct(req,res,url);
   if (url.pathname.startsWith('/api/')) return json(res,404,safeError('NOT_FOUND','Không tìm thấy API.'));
   if (req.method !== 'GET' && req.method !== 'HEAD') return json(res,405,safeError('METHOD_NOT_ALLOWED','Phương thức không hỗ trợ.'));
   if (url.pathname === '/ui' || url.pathname === '/ui/') {
@@ -135,7 +177,7 @@ const server = http.createServer(async (req,res) => {
   if (!CONTENT_TYPES[path.extname(absolute).toLowerCase()]) {res.writeHead(404);return res.end('Not found');}
   try {
     const content=await readFile(absolute);
-    res.writeHead(200,{'Content-Type':CONTENT_TYPES[path.extname(absolute).toLowerCase()],'X-Content-Type-Options':'nosniff','Cache-Control':'no-cache'});
+    res.writeHead(200,{'Content-Type':CONTENT_TYPES[path.extname(absolute).toLowerCase()],'X-Content-Type-Options':'nosniff','Cache-Control':/\.(?:html|js|mjs|css)$/i.test(absolute)?'no-store':'no-cache'});
     return res.end(req.method==='HEAD'?undefined:content);
   } catch {res.writeHead(404);return res.end('Not found');}
 });

@@ -1,0 +1,32 @@
+# Local all-in-one development. Never expose MailHog publicly.
+services:
+  guide:
+    build: .
+    env_file: .env
+    environment:
+      HCMUS_DB_PATH: /data/admissions.sqlite3
+      HCMUS_PRODUCT_DB_PATH: /data/product.sqlite3
+      CHAT_MODE: api
+      API_ORIGIN: http://127.0.0.1:8000
+      PORT: '8080'
+      AI_PROVIDER: ${DOCKER_AI_PROVIDER:-none}
+      SMTP_MODE: mailhog
+      SMTP_HOST: mailhog
+      SMTP_PORT: '1025'
+      COOKIE_SECURE: '0'
+      HCMUS_LOCAL_BOOTSTRAP: '1'
+    ports:
+      - '127.0.0.1:8080:8080'
+    volumes:
+      - guide_data:/data
+    depends_on:
+      - mailhog
+    restart: unless-stopped
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    platform: linux/amd64
+    ports:
+      - '127.0.0.1:8025:8025'
+    restart: unless-stopped
+volumes:
+  guide_data:

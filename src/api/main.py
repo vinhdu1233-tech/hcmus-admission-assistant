@@ -3,6 +3,11 @@ Major exploration uses verified retrieval and optional AI explanations.
 """
 from __future__ import annotations
 from typing import Annotated, Literal
+import time, os
+from src.product_auth import require_user, error
+from src.product_db import db
+from src.product_chat import owned_thread, new_thread, store_turn
+from src.product import router as product_router, record_question
 from uuid import UUID
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -11,12 +16,15 @@ from pydantic import BaseModel, Field, StrictInt, StrictStr
 from src.assistant.conversation import conversation_manager
 from src.database.db import ensure_database
 
-app=FastAPI(title='HCMUS Admission & Study Assistant',version='0.2.0')
+app=FastAPI(title='HCMUS Admission & Study Assistant',version='0.3.0')
+app.include_router(product_router)
 
 class ChatRequest(BaseModel):
     message: StrictStr
     admission_year: Annotated[StrictInt,Field(ge=2000,le=2100)] | None = None
     conversation_id: UUID | None = None
+    thread_id: UUID | None = None
+    account_id: StrictInt | None = None
 class Source(BaseModel):
     title:str
     url:str
@@ -32,7 +40,9 @@ def public_error(code:str,detail:str,answer:str)->dict:
             'error':{'code':code,'message':detail}}
 
 @app.exception_handler(RequestValidationError)
-async def invalid_schema(_:Request,__:RequestValidationError):
+async def invalid_schema(req:Request,__:RequestValidationError):
+    if req.url.path.startswith('/product/'):
+        return JSONResponse(status_code=422,content={'detail':'Dữ liệu gửi lên không đúng định dạng.'})
     return JSONResponse(status_code=422,content=public_error('INVALID_SCHEMA',
        'message phải là chuỗi; admission_year phải là số nguyên từ 2000 đến 2100 hoặc null.',
        'Dữ liệu gửi lên không đúng định dạng.'))
@@ -42,18 +52,31 @@ def health():
     return {'status':'ok'}
 
 @app.post('/chat',response_model=ChatResponse)
-def chat(request:ChatRequest):
+def chat(request:ChatRequest, http_request:Request):
+    started=time.perf_counter()
     msg=request.message.strip()
     if not msg or len(msg)>1000:
         return JSONResponse(status_code=400,content=public_error('INVALID_INPUT',
             'Câu hỏi sau khi bỏ khoảng trắng phải có từ 1 đến 1000 ký tự.',
             'Vui lòng nhập một câu hỏi hợp lệ.'))
+    uid=None;thread=None
+    if os.getenv("REQUIRE_ACCOUNT_CHAT","0")=="1" or request.thread_id is not None or request.account_id is not None:
+        user=require_user(http_request);uid=user["id"]
+        if request.account_id is not None and request.account_id!=uid:error(409,"Phiên tài khoản đã thay đổi.")
+        with db(True) as c:
+            if request.thread_id:
+                thread=str(request.thread_id);owned_thread(c,uid,thread)
+            else:
+                thread=new_thread(c,uid)
     try:
         ensure_database()
-        return ChatResponse(**conversation_manager.answer(
+        result=ChatResponse(**conversation_manager.answer(
             msg, request.admission_year,
-            str(request.conversation_id) if request.conversation_id is not None else None
+            thread or (str(request.conversation_id) if request.conversation_id is not None else None)
         ))
+        if thread:store_turn(uid,thread,msg,result.model_dump())
+        record_question(http_request,msg,result,(time.perf_counter()-started)*1000)
+        return result
     except Exception:
         # Avoid exposing internal details and secrets to end users.
         return JSONResponse(status_code=503,content=public_error('SERVICE_UNAVAILABLE',

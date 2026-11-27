@@ -1,0 +1,70 @@
+name: Product week 1 integration
+on:
+  push:
+    branches: ['feat/week1-auth-calendar-monitoring']
+  pull_request:
+    branches: [main]
+jobs:
+  product-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      mailhog:
+        image: mailhog/mailhog:v1.0.1
+        ports:
+          - 1025:1025
+          - 8025:8025
+    env:
+      AI_PROVIDER: none
+      OPENAI_API_KEY: ''
+      GEMINI_API_KEY: ''
+      HCMUS_OTP_SECRET: ci-only-otp-secret-not-for-production-0123456789
+      SMTP_MODE: mailhog
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: '1025'
+      COOKIE_SECURE: '0'
+      RUN_MAILHOG_TEST: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: python -m pip install -r requirements-backend-dev.txt playwright
+      - name: Python product and MVP regression
+        run: python -m pytest -q tests
+      - name: JS syntax and MVP proxy tests
+        run: |
+          node --check ui/server.mjs
+          node --check ui/portal.js
+          node --check ui/app.js
+          node --check ui/product-nav.js
+          node --check ui/product-sw.js
+          node --test tests/test_conversation_proxy.mjs tests/test_planner_methods.mjs tests/test_web_product.mjs tests/test_calendar_grouping.mjs
+      - name: Browser system tests
+        env:
+          HCMUS_DB_PATH: /tmp/week1-admissions.sqlite3
+          HCMUS_PRODUCT_DB_PATH: /tmp/week1-product.sqlite3
+        run: |
+          python -m src.database.db
+          REQUIRE_ACCOUNT_CHAT=1 python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 > /tmp/week1-api.log 2>&1 &
+          PORT=5501 CHAT_MODE=api API_ORIGIN=http://127.0.0.1:8000 node ui/server.mjs > /tmp/week1-node.log 2>&1 &
+          python -m scripts.product_browser_check
+          # Isolated legacy F1 benchmark: product API stays authenticated on port 8000.
+          REQUIRE_ACCOUNT_CHAT=0 python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8001 > /tmp/week1-f1-api.log 2>&1 &
+          for i in {1..30}; do curl -fsS http://127.0.0.1:8001/health && break; sleep 1; done
+          F1_BENCHMARK_URL=http://127.0.0.1:8001/chat python scripts/f1_slo_regression.py
+          python -m scripts.f4_acceptance_metrics
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: week1-product-evidence
+          path: |
+            product-browser-evidence/
+            /tmp/week1-api.log
+            /tmp/week1-node.log
+          if-no-files-found: warn

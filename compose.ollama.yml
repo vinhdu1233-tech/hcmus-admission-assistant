@@ -1,0 +1,19 @@
+# Optional local AI, without changing the existing loopback-only Ollama client.
+# Share guide's network namespace; no Ollama port is exposed to the host.
+services:
+  guide:
+    environment:
+      AI_PROVIDER: ollama
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:4b}
+  ollama:
+    image: ollama/ollama:latest
+    network_mode: service:guide
+    environment:
+      OLLAMA_HOST: '127.0.0.1:11434'
+    depends_on:
+      - guide
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+volumes:
+  ollama_models:

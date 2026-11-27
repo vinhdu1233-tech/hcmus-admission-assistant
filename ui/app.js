@@ -50,8 +50,11 @@ if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-mot
   document.querySelectorAll('.reveal').forEach(node=>io.observe(node));
 } else document.querySelectorAll('.reveal').forEach(node=>node.classList.add('is-visible'));
 
-function openAssistant() {
-  if(!els.modal.hidden){els.input.focus();return;}
+async function openAssistant() {
+  const u=await accountNow().catch(()=>null);if(!u){location.href='/portal.html#account';return false;}
+  if(chatOwner!==u.id||!activeThread){try{await restoreChat(u);}catch(e){alert(e.message);return false;}}
+
+  if(!els.modal.hidden){els.input.focus();return true;}
   previousFocus=document.activeElement;
   closeMenu();
   els.modal.hidden=false;
@@ -59,7 +62,7 @@ function openAssistant() {
   for(const selector of ['.site-header','.mobile-nav','main','.site-footer','.floating-chat']) {
     const node=document.querySelector(selector); if(node)node.inert=true;
   }
-  requestAnimationFrame(()=>els.input.focus());
+  requestAnimationFrame(()=>els.input.focus());return true;
 }
 function closeAssistant() {
   if(els.modal.hidden)return;
@@ -133,6 +136,7 @@ function setBusy(value){
   sending=value;els.submit.disabled=value;els.input.disabled=value;
   document.querySelectorAll('[data-question]').forEach(b=>b.disabled=value);
   if (els.newChat) els.newChat.disabled=value;
+  if(document.getElementById('chat-history'))document.getElementById('chat-history').disabled=value;
   els.submit.setAttribute('aria-label',value?'Đang gửi câu hỏi':'Gửi câu hỏi');
 }
 function extractYear(question) {
@@ -140,7 +144,7 @@ function extractYear(question) {
   return years.length===1 ? years[0] : null;
 }
 async function askServer(question) {
-  const payload={message:question};
+  const payload={message:question,thread_id:activeThread,account_id:chatOwner};
   const year=extractYear(question);if(year!==null)payload.admission_year=year;
   const controller=new AbortController();
   // Local Ollama may need time to warm up; Node upstream timeout is 130 seconds.
@@ -148,6 +152,7 @@ async function askServer(question) {
   try{
     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
     const data=await response.json().catch(()=>null);
+    if(response.status===401){location.href='/portal.html#account';throw Error('Phiên đăng nhập đã hết hạn.');}
     if(!data || typeof data.answer!=='string')throw new Error('Server chưa trả JSON theo API Contract.');
     if(!response.ok)throw new Error(data?.error?.message || data.answer || 'Không thể xử lý câu hỏi.');
     if(!Array.isArray(data.sources) || typeof data.status!=='string')throw new Error('Response thiếu status hoặc sources.');
@@ -163,12 +168,14 @@ async function sendQuestion(raw) {
   const question=String(raw||'').trim();
   if(!question){els.input.focus();return;}
   if(question.length>1000){updateStatus('Câu hỏi tối đa 1000 ký tự.',true);return;}
-  if(els.modal.hidden)openAssistant();
+  if(!await openAssistant())return;
+  if(sending)return;
   appendMessage(question,'user');els.input.value='';updateCount();setBusy(true);
   const pending=appendTyping();updateStatus('Đang truy xuất thông tin và xử lý câu hỏi…');
   try{
     const data=await askServer(question);
     pending.remove();appendMessage(data.answer,'bot',{status:data.status,sources:data.sources});
+    const option=historySelect.selectedOptions[0];if(option?.textContent==='Cuộc trò chuyện mới')option.textContent=question.slice(0,80);
     updateStatus(mode==='demo'?'DEMO MODE · Đây là phản hồi mô phỏng, không phải kết quả truy xuất tuyển sinh.':'API MODE · Hãy đối chiếu nguồn và năm áp dụng.');
   }catch(err){
     pending.remove();
@@ -184,32 +191,40 @@ function updateCount(){els.count.textContent=`${els.input.value.length} / 1000`;
 els.form.addEventListener('submit',event=>{event.preventDefault();sendQuestion(els.input.value);});
 els.input.addEventListener('input',updateCount);
 els.input.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendQuestion(els.input.value);}});
-document.querySelectorAll('[data-question]').forEach(button=>button.addEventListener('click',()=>{openAssistant();sendQuestion(button.dataset.question);}));
+document.querySelectorAll('[data-question]').forEach(button=>button.addEventListener('click',()=>sendQuestion(button.dataset.question)));
 
-// New conversation resets BOTH the displayed thread and FastAPI's stored
-// per-browser context. Never clear the UI before the server confirms a reset.
-if(els.newChat)els.newChat.addEventListener('click',async()=>{
-  if(sending)return;
-  els.newChat.disabled=true;
-  updateStatus('Đang bắt đầu hội thoại mới…');
-  try{
-    const res=await fetch('/api/conversation/reset',{method:'POST',cache:'no-store'});
-    const data=await res.json();
-    if(!res.ok || data.ok!==true)throw new Error(data.message||'Không thể đặt lại hội thoại.');
-    els.messages.replaceChildren();
-    const welcome=element('div','msg bot');
-    welcome.append(element('span','msg-label','HCMUS GUIDE'));
-    welcome.append(element('div','msg-bubble','Chào bạn! Mình là HCMUS Guide. Bạn muốn tìm hiểu về tuyển sinh, ngành học hay checklist chuẩn bị hồ sơ?'));
-    els.messages.append(welcome);
-    els.input.value='';updateCount();
-    updateStatus('Đã bắt đầu cuộc trò chuyện mới. Ngữ cảnh cũ không còn được sử dụng.');
-    scrollMessages();
-    els.input.focus();
-  }catch(error){
-    updateStatus(error.message||'Không thể bắt đầu cuộc trò chuyện mới.',true);
-  }finally{els.newChat.disabled=false;}
-});
-
+// Private history: all reads and writes are account-authorized by FastAPI.
+let chatOwner=null,activeThread=null,chatLoading=null;
+const historySelect=document.getElementById('chat-history');
+async function chatApi(path,method='GET'){
+ const r=await fetch('/api/product/chat/threads'+path,{method,cache:'no-store',headers:method==='POST'?{'Content-Type':'application/json'}:{},body:method==='POST'?'{}':undefined});
+ if(!r.ok)throw Error('Không tải được cuộc trò chuyện. Hãy đăng nhập lại.');
+ return r.json();
+}
+function welcomeChat(){
+ els.messages.replaceChildren();
+ appendMessage('Chào bạn! Mình là HCMUS Guide. Bạn muốn hỏi gì về tuyển sinh và ngành học?','bot');
+}
+async function readThread(id){
+ const d=await chatApi('/'+encodeURIComponent(id));activeThread=id;
+ welcomeChat();
+ for(const t of d.turns){appendMessage(t.question,'user');appendMessage(t.response.answer,'bot',t.response);}
+ historySelect.value=id;
+}
+async function listThreads(preferred){
+ const d=await chatApi('');historySelect.replaceChildren(...d.items.map(t=>new Option(t.title,t.id)));
+ if(!d.items.length){const t=await chatApi('','POST');return listThreads(t.id);}
+ await readThread(d.items.some(t=>t.id===preferred)?preferred:d.items[0].id);
+}
+async function restoreChat(u){
+ if(chatLoading)return chatLoading;
+ chatOwner=u.id;activeThread=null;welcomeChat();
+ chatLoading=listThreads().catch(e=>{chatOwner=null;throw e;}).finally(()=>{chatLoading=null;});
+ return chatLoading;
+}
+historySelect.onchange=async()=>{if(sending)return;setBusy(true);try{await readThread(historySelect.value);}catch(e){updateStatus(e.message,true);}finally{setBusy(false);}};
+els.newChat.onclick=async()=>{if(sending)return;setBusy(true);try{const t=await chatApi('','POST');await listThreads(t.id);updateStatus('Cuộc trò chuyện mới. Lịch sử cũ vẫn được lưu.');}catch(e){updateStatus(e.message,true);}finally{setBusy(false);}};
+window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
 // The server chooses demo vs API mode; never store API keys or secrets in browser JS.
 async function loadMode(){
   try{
@@ -241,31 +256,42 @@ const planner={
 let plannerState={done:[],extra:[]};
 function selectedMethod(){return (ADMISSION_METHODS[planner.year.value]||[]).find(m=>m.id===planner.method.value)||null;}
 function selectedPath(){return selectedMethod()?.paths?.find(p=>p.id===planner.path.value)||null;}
-function plannerKey(){return 'hcmus-guide:planner:v3:'+planner.year.value+':'+(planner.method.value||'none')+':'+(planner.path.value||'none');}
-function readPlanner(){
- try{
-  const s=JSON.parse(localStorage.getItem(plannerKey())||'{}');
-  return {
-    done:Array.isArray(s.done)?s.done.filter(v=>typeof v==='string'):[],
-    extra:Array.isArray(s.extra)?s.extra.filter(v=>v&&typeof v.id==='string'&&typeof v.title==='string').slice(0,25):[]
-  };
- }catch{return {done:[],extra:[]};}
-}
+function plannerKey(){return planner.year.value+':'+planner.method.value+':'+planner.path.value;}
+let planOwner=null,planName='',accountKnown=false,planReady=false,planVersion=0,syncChain=Promise.resolve(),planFailed=false,pendingSaves=0;
+async function accountNow(){const r=await fetch('/api/product/auth/me',{cache:'no-store'});if(!r.ok)throw Error('Không kết nối được tài khoản');return (await r.json()).user;}
 function savePlanner(){
- try{localStorage.setItem(plannerKey(),JSON.stringify(plannerState));planner.saved.textContent='ĐÃ LƯU TRÊN THIẾT BỊ';}
- catch{planner.saved.textContent='KHÔNG THỂ LƯU TRÊN THIẾT BỊ';}
+ if(!planReady||!planOwner||!selectedMethod())return;
+ const uid=planOwner,key=plannerKey(),payload=planPayload();
+ planner.saved.textContent='ĐANG LƯU…';planFailed=false;pendingSaves++;
+ syncChain=syncChain.catch(()=>{}).then(()=>sendPlan(payload,uid)).then(()=>{if(key===plannerKey())planner.saved.textContent='ĐÃ LƯU VÀO TÀI KHOẢN';}).catch(e=>{planFailed=true;planner.saved.textContent='CHƯA LƯU: '+e.message;}).finally(()=>pendingSaves--);
 }
 function setOptions(select,items,preferred){
  select.replaceChildren();
  for(const item of items){const option=document.createElement('option');option.value=item.value;option.textContent=item.label;select.append(option);}
  if(items.some(x=>x.value===preferred))select.value=preferred;
 }
-function loadPlanner(){plannerState=readPlanner();planner.saved.textContent='ĐÃ TẢI KẾ HOẠCH';renderPlanner();}
-function updateMethods(preferred){
+async function loadPlanner(){
+ const v=++planVersion,key=plannerKey();planReady=false;plannerState={done:[],extra:[]};renderPlanner();planner.saved.textContent='ĐANG TẢI…';
+ try{
+  await syncChain;const u=await accountNow();if(v!==planVersion)return;
+  planOwner=u?.id||null;planName=u?.username||'';accountKnown=true;
+  document.getElementById('planner-owner').textContent=u?'Checklist của '+u.username:'Bạn chưa đăng nhập';
+  if(!u){planner.saved.textContent='ĐĂNG NHẬP ĐỂ LƯU CHECKLIST';return;}
+  if(!selectedMethod()){planner.saved.textContent='CHƯA CÓ PHƯƠNG THỨC';return;}
+  const r=await fetch('/api/product/calendar/checklist?'+new URLSearchParams({year:planner.year.value,method:planner.method.value,account_id:u.id}),{cache:'no-store'});
+  if(!r.ok)throw Error('Không tải được checklist');
+  const data=await r.json();if(data.account_id!==u.id)throw Error('Phiên tài khoản đã thay đổi');
+  const p=data.items.find(x=>x.path===(selectedPath()?.id||''));
+  if(v!==planVersion||key!==plannerKey())return;
+  if(p)plannerState={done:p.tasks.filter(t=>t.done).map(t=>t.id),extra:p.tasks.filter(t=>t.id.startsWith('custom-')).map(t=>({id:t.id,title:t.title}))};
+  planReady=true;planner.saved.textContent=p?'ĐÃ KHÔI PHỤC TỪ TÀI KHOẢN':'SẴN SÀNG LƯU TỰ ĐỘNG';renderPlanner();
+ }catch(e){if(v===planVersion)planner.saved.textContent=e.message;}
+}
+function updateMethods(preferred,pathPreferred){
  const methods=ADMISSION_METHODS[planner.year.value]||[];
  if(methods.length){planner.method.disabled=false;setOptions(planner.method,methods.map(m=>({value:m.id,label:m.label})),preferred);}
  else{planner.method.disabled=true;setOptions(planner.method,[{value:'',label:'Chưa có phương thức được xác minh'}],'');}
- updatePath();
+ updatePath(pathPreferred);
 }
 function updatePath(preferred){
  const method=selectedMethod();
@@ -304,7 +330,7 @@ function renderPlanner(){
  for(const task of tasks){
   const line=document.createElement('div');line.className='planner-task';
   const label=document.createElement('label');label.className='planner-task-label';
-  const check=document.createElement('input');check.type='checkbox';check.checked=plannerState.done.includes(task.id);
+  const check=document.createElement('input');check.type='checkbox';check.checked=plannerState.done.includes(task.id);check.disabled=!planReady;
   check.setAttribute('aria-label','Đã hoàn thành: '+task.title);
   const content=document.createElement('span');content.className='planner-task-content';
   const title=document.createElement('strong');title.textContent=task.title;content.append(title);
@@ -315,7 +341,7 @@ function renderPlanner(){
    savePlanner();renderPlanner();
   });
   if(task.id.startsWith('custom-')){
-   const remove=document.createElement('button');remove.type='button';remove.className='planner-remove';
+   const remove=document.createElement('button');remove.type='button';remove.disabled=!planReady;remove.className='planner-remove';
    remove.textContent='×';remove.setAttribute('aria-label','Xóa việc: '+task.title);
    remove.addEventListener('click',()=>{
     plannerState.extra=plannerState.extra.filter(v=>v.id!==task.id);
@@ -334,7 +360,7 @@ function renderPlanner(){
  planner.summary.textContent=!method?'Hãy chọn năm có dữ liệu chính thức để bắt đầu.'
   :completed===tasks.length?'Đã đánh dấu hết checklist. Tiếp tục đối chiếu thông báo của trường.'
   :'Còn '+(tasks.length-completed)+' việc trong kế hoạch '+planner.year.value+' · '+method.id+'.';
- planner.addForm.hidden=!method;planner.reset.disabled=!method;
+ planner.addForm.hidden=!method;planner.reset.disabled=!method||!planReady;planner.addInput.disabled=!planReady;
 }
 planner.year.addEventListener('change',()=>updateMethods());
 planner.method.addEventListener('change',()=>updatePath());
@@ -342,12 +368,12 @@ planner.path.addEventListener('change',loadPlanner);
 planner.addForm.addEventListener('submit',event=>{
  event.preventDefault();if(!selectedMethod())return;
  const title=planner.addInput.value.trim();
- if(!title||plannerState.extra.length>=25)return;
+ if(!planReady||!title||plannerState.extra.length>=25)return;
  const id='custom-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
  plannerState.extra.push({id,title});planner.addInput.value='';savePlanner();renderPlanner();
 });
 planner.reset.addEventListener('click',()=>{
- if(!selectedMethod())return;
+ if(!planReady||!selectedMethod())return;
  if(!confirm('Bỏ đánh dấu tất cả việc đã hoàn thành trong checklist hiện tại?'))return;
  plannerState.done=[];savePlanner();renderPlanner();
 });
@@ -357,4 +383,44 @@ document.querySelectorAll('.js-open-planner').forEach(button=>{
   requestAnimationFrame(()=>document.getElementById('planner').scrollIntoView({behavior:'smooth'}));
  });
 });
+const linkPlan=element('button','planner-reset','Liên kết với lịch tài khoản →');linkPlan.type='button';planner.reset.after(linkPlan);
+function planPayload(){
+ const m=selectedMethod(),p=selectedPath();
+ return {year:Number(planner.year.value),method:m.id,path:p?.id||'',tasks:[...commonTasks(planner.year.value),...m.tasks,...(p?.tasks||[]),...plannerState.extra].map(t=>({id:t.id,title:t.title,done:plannerState.done.includes(t.id)}))};
+}
+async function sendPlan(payload,expected){
+ const r=await fetch('/api/product/calendar/checklist',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({...payload,account_id:expected}),keepalive:true});
+ if(!r.ok)throw Error('Không lưu được checklist lên tài khoản');
+}
+linkPlan.onclick=async()=>{
+ try{const u=await accountNow();if(!u){location.href='/portal.html#account';return;}
+ if(!planReady||planOwner!==u.id||!selectedMethod())return;
+ linkPlan.disabled=true;await syncChain;await sendPlan(planPayload(),u.id);
+ location.href='/portal.html?year='+encodeURIComponent(planner.year.value)+'&method='+encodeURIComponent(planner.method.value)+'#calendar';
+ }catch(e){planner.saved.textContent=e.message;}finally{linkPlan.disabled=false;}
+};
+window.addEventListener('beforeunload',e=>{if(planFailed||pendingSaves){e.preventDefault();e.returnValue='';}});
 updateMethods('2');
+(async()=>{
+ const v=planVersion;
+ try{
+  const u=await accountNow();if(!u)return;
+  const r=await fetch('/api/product/calendar/checklist?year=0&account_id='+u.id,{cache:'no-store'});if(!r.ok)return;
+  const data=await r.json();if(data.account_id!==u.id)return;const p=data.items[0];
+  if(v!==planVersion||!p||!ADMISSION_METHODS[p.year])return;
+  if([...planner.year.options].some(o=>Number(o.value)===p.year)){planner.year.value=String(p.year);updateMethods(p.method,p.path);}
+ }catch{}
+})();
+function clearPrivateView(){
+ planVersion++;planReady=false;plannerState={done:[],extra:[]};planOwner=null;planName='';accountKnown=false;renderPlanner();
+ els.messages.replaceChildren();historySelect.replaceChildren();chatOwner=null;activeThread=null;closeAssistant();
+ document.getElementById('planner-owner').textContent='Đang xác minh tài khoản…';
+}
+window.addEventListener('storage',e=>{if(e.key==='hcmus:auth-change'){clearPrivateView();location.reload();}});
+async function verifyVisibleAccount(){
+ if(document.hidden)return;
+ try{const u=await accountNow();if((chatOwner&&chatOwner!==u?.id)||(accountKnown&&(planOwner||null)!==(u?.id||null))){clearPrivateView();location.reload();}}
+ catch{}
+}
+document.addEventListener('visibilitychange',verifyVisibleAccount);window.addEventListener('focus',verifyVisibleAccount);
+

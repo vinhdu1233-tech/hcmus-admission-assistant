@@ -1,0 +1,29 @@
+name: Docker product smoke test
+on:
+  push:
+    branches: ['feat/week1-auth-calendar-monitoring']
+    paths: ['Dockerfile','compose.product.yml','scripts/local_bootstrap.py','scripts/run_product.py','scripts/docker_product_smoke.py','.github/workflows/docker-product.yml','src/**','ui/**']
+  pull_request:
+    branches: [main]
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start complete Docker stack
+        run: |
+          cp .env.example .env
+          docker compose -f compose.product.yml up -d --build --wait --wait-timeout 120
+          docker compose -f compose.product.yml ps
+      - name: Test real SMTP, login, API, persisted database and stable keys
+        run: |
+          python3 scripts/docker_product_smoke.py register
+          docker compose -f compose.product.yml restart guide
+          python3 scripts/docker_product_smoke.py restart
+      - name: Logs
+        if: always()
+        run: docker compose -f compose.product.yml logs --tail 100
+      - name: Clean up ephemeral CI stack
+        if: always()
+        run: docker compose -f compose.product.yml down -v

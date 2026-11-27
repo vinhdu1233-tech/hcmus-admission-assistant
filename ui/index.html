@@ -12,6 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script type="module" src="app.js"></script>
+  <script type="module" src="product-nav.js"></script>
+  <link rel="manifest" href="/manifest.webmanifest">
 </head>
 <body>
   <a class="skip-link" href="#main">Bỏ qua điều hướng</a>
@@ -24,13 +26,13 @@
       <a href="#story">Câu chuyện</a>
       <a href="#campus">HCMUS</a>
       <a href="#explore">Khám phá</a>
-      <a href="#sources">Nguồn tin</a>
+      <a href="#sources">Nguồn tin</a><a href="/portal.html#calendar">Lịch tuyển sinh</a>
     </nav>
     <button type="button" class="nav-cta js-open-chat" aria-haspopup="dialog" aria-controls="assistant-modal">TRÒ CHUYỆN <span aria-hidden="true">↗</span></button>
     <button type="button" class="menu-toggle" id="menu-toggle" aria-label="Mở menu" aria-expanded="false" aria-controls="mobile-nav"><span></span><span></span></button>
   </header>
   <nav class="mobile-nav" id="mobile-nav" aria-label="Điều hướng di động" hidden>
-    <a href="#story">Câu chuyện</a><a href="#campus">HCMUS</a><a href="#explore">Khám phá</a><a href="#planner">Checklist</a><a href="#sources">Nguồn tin</a>
+    <a href="#story">Câu chuyện</a><a href="#campus">HCMUS</a><a href="#explore">Khám phá</a><a href="#planner">Checklist</a><a href="#sources">Nguồn tin</a><a href="/portal.html#calendar">Lịch tuyển sinh</a>
     <button type="button" class="mobile-chat js-open-chat">Mở trợ lý toàn màn hình <span aria-hidden="true">↗</span></button>
   </nav>
 
@@ -95,7 +97,7 @@
         <div>
           <p class="section-tag"><span></span> 04 / APPLICATION PLANNER</p>
           <h2 id="planner-heading">Từng bước nhỏ.<br><em>Một hành trình rõ ràng.</em></h2>
-          <p class="planner-intro">Chọn năm và phương thức tuyển sinh HCMUS. Checklist sẽ thay đổi theo cách xét tuyển bạn sử dụng, cùng với tiến độ được lưu trên thiết bị.</p>
+          <p class="planner-intro">Chọn năm và phương thức tuyển sinh HCMUS. Checklist sẽ thay đổi theo cách xét tuyển bạn sử dụng, cùng với tiến độ tự động lưu vào tài khoản của bạn.</p>
         </div>
         <div class="planner-aside-note"><span>YOUR PLAN / YOUR PACE</span><strong>Không cần tài khoản.</strong><p>Tiến độ được lưu riêng cho từng phương thức trong trình duyệt bạn đang dùng.</p></div>
       </div>
@@ -121,7 +123,7 @@
           <button class="planner-reset" id="planner-reset" type="button">Bỏ đánh dấu tất cả <span aria-hidden="true">↺</span></button>
         </div>
         <div class="planner-tasks">
-          <div class="planner-tasks-top"><span class="planner-step-tag">02 / THE CHECKLIST</span><span class="planner-saved" id="planner-saved" role="status">SẴN SÀNG</span></div>
+          <div class="planner-tasks-top"><span class="planner-step-tag">02 / THE CHECKLIST</span><span id="planner-owner" class="planner-owner">Đang xác minh tài khoản…</span><span class="planner-saved" id="planner-saved" role="status">SẴN SÀNG</span></div>
           <h3>Danh sách của bạn.</h3>
           <p class="planner-help">Checklist hỗ trợ <strong>lập kế hoạch cá nhân</strong>, không phải danh sách giấy tờ bắt buộc chính thức. Hãy kiểm tra điều kiện theo ngành, năm, đối tượng và các cập nhật từ HCMUS.</p>
           <div class="planner-source-box" id="planner-source-box"></div>
@@ -161,11 +163,11 @@
     <section class="modal-frame" role="dialog" aria-modal="true" aria-labelledby="modal-heading" aria-describedby="modal-description">
       <aside class="modal-aside">
         <div class="modal-aside-top"><span class="modal-brand">H<span>✳</span></span><span>HCMUS GUIDE<br><small>AN OPEN CONVERSATION</small></span></div>
-        <div class="modal-aside-middle"><p class="section-tag light"><span></span> WELCOME TO YOUR NEXT STEP</p><h2 id="modal-heading">Bạn có<br><em>câu hỏi gì?</em></h2><p id="modal-description">Tra cứu thông tin tuyển sinh và khám phá ngành học. Checklist hồ sơ nằm trên trang chủ và được lưu riêng trên thiết bị.</p><div class="modal-separator"></div><p class="quick-title">GỢI Ý BẮT ĐẦU</p><div class="modal-quick"><button type="button" data-question="HCMUS có những phương thức tuyển sinh nào năm 2026?">Tìm hiểu tuyển sinh <span aria-hidden="true">↗</span></button><button type="button" data-question="Em thích lập trình và toán, nên tìm hiểu ngành nào năm 2026?">Khám phá ngành học <span aria-hidden="true">↗</span></button><button type="button" class="js-open-planner">Mở checklist <span aria-hidden="true">↗</span></button></div></div>
+        <div class="modal-aside-middle"><p class="section-tag light"><span></span> WELCOME TO YOUR NEXT STEP</p><h2 id="modal-heading">Bạn có<br><em>câu hỏi gì?</em></h2><p id="modal-description">Tra cứu thông tin tuyển sinh và khám phá ngành học. Checklist được tự động lưu theo tài khoản.</p><div class="modal-separator"></div><p class="quick-title">GỢI Ý BẮT ĐẦU</p><div class="modal-quick"><button type="button" data-question="HCMUS có những phương thức tuyển sinh nào năm 2026?">Tìm hiểu tuyển sinh <span aria-hidden="true">↗</span></button><button type="button" data-question="Em thích lập trình và toán, nên tìm hiểu ngành nào năm 2026?">Khám phá ngành học <span aria-hidden="true">↗</span></button><button type="button" class="js-open-planner">Mở checklist <span aria-hidden="true">↗</span></button></div></div>
         <div class="aside-bottom"><span>✳</span> DỰ ÁN HỌC TẬP · KHÔNG PHẢI WEBSITE CHÍNH THỨC</div>
       </aside>
       <div class="modal-chat">
-        <header class="modal-chat-header"><div class="chat-assistant-icon" aria-hidden="true">H<span>✳</span></div><div class="chat-headline"><strong>HCMUS Guide</strong><small>Admission & Study Assistant</small></div><span class="chat-mode" id="chat-mode">DEMO MODE</span><button type="button" class="new-chat-button" id="new-chat" title="Xóa ngữ cảnh và bắt đầu hội thoại mới" aria-label="Bắt đầu hội thoại mới">↻ <span>TRÒ CHUYỆN MỚI</span></button><button type="button" class="close-modal" id="close-modal" aria-label="Đóng trò chuyện"><span aria-hidden="true">×</span></button></header>
+        <header class="modal-chat-header"><div class="chat-assistant-icon" aria-hidden="true">H<span>✳</span></div><div class="chat-headline"><strong>HCMUS Guide</strong><small>Admission & Study Assistant</small></div><span class="chat-mode" id="chat-mode">DEMO MODE</span><select id="chat-history" aria-label="Lịch sử cuộc trò chuyện" title="Lịch sử cuộc trò chuyện"></select><button type="button" class="new-chat-button" id="new-chat" title="Xóa ngữ cảnh và bắt đầu hội thoại mới" aria-label="Bắt đầu hội thoại mới">↻ <span>TRÒ CHUYỆN MỚI</span></button><button type="button" class="close-modal" id="close-modal" aria-label="Đóng trò chuyện"><span aria-hidden="true">×</span></button></header>
         <div class="chat-thread" id="messages" role="log" aria-label="Nội dung cuộc trò chuyện" aria-live="polite" aria-relevant="additions"><div class="msg bot"><span class="msg-label">HCMUS GUIDE</span><div class="msg-bubble">Chào bạn! 👋 Mình là HCMUS Guide. Bạn muốn tìm hiểu về tuyển sinh, ngành học hay cách chuẩn bị cho năm nhất?</div></div><div class="chat-welcome"><span>GỢI Ý DÀNH CHO BẠN</span><div class="welcome-prompts"><button type="button" data-question="Các phương thức tuyển sinh HCMUS năm 2026 là gì?">Phương thức tuyển sinh ↗</button><button type="button" data-question="Ngành nào xét tuyển tổ hợp A01 năm 2026?">Tổ hợp A01 ↗</button><button type="button" class="js-open-planner">Checklist của tôi ↗</button></div></div></div>
         <div class="chat-bottom"><div id="chat-status-text" class="chat-status-text" role="status">Bản demo: câu trả lời chưa truy xuất dữ liệu tuyển sinh hoặc AI thật.</div><form id="chat-form" class="composer"><label for="question" class="sr-only">Câu hỏi gửi đến HCMUS Guide</label><textarea id="question" rows="1" maxlength="1000" placeholder="Nhập câu hỏi của bạn về HCMUS…" required></textarea><button type="submit" id="send-button" aria-label="Gửi câu hỏi"><span aria-hidden="true">↑</span></button></form><div class="composer-foot"><span>ENTER ĐỂ GỬI · SHIFT + ENTER ĐỂ XUỐNG DÒNG</span><span id="character-count">0 / 1000</span></div></div>
       </div>

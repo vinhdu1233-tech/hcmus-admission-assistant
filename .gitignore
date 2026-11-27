@@ -13,3 +13,10 @@ __pycache__/
 data/raw/
 node_modules/
 *.log
+*.pem
+product-browser-evidence/
+
+# Local private database snapshots for DBeaver
+*inspect.sqlite3
+*inspect.sqlite3-wal
+*inspect.sqlite3-shm
