@@ -43,7 +43,7 @@ async function showPage(){
   if(!['account','calendar','dashboard'].includes(target))target='calendar';
   if(target==='dashboard'&&user?.role!=='admin'){target='account';location.hash='account';flash('Dashboard chỉ dành cho Admin.',true);}
   for(const id of ['account','calendar','dashboard'])$(id).hidden=id!==target;
-  if(target==='calendar'){await loadCalendar();await refreshMonitor();await refreshNotices();await refreshPush();}
+  if(target==='calendar'){await loadCalendar(initialFilters.has('year'));await refreshMonitor();await refreshNotices();await refreshPush();}
   if(target==='dashboard')await loadAdmin();
 }
 window.addEventListener('hashchange',()=>safe(showPage));
@@ -65,6 +65,7 @@ document.querySelectorAll('[data-send-code]').forEach(b=>b.addEventListener('cli
 $('logout').onclick=()=>safe(async()=>{let sub=null;try{const reg=await navigator.serviceWorker?.getRegistration('/');sub=await reg?.pushManager?.getSubscription();}catch{}await api('/auth/logout',{method:'POST',body:sub?{endpoint:sub.endpoint}:{}});if(sub){try{await sub.unsubscribe();}catch{}}await refreshUser();showAuthTab('login');flash('Đã đăng xuất. Lịch riêng không còn hiển thị.');});
 $('change-password').onclick=()=>{ $('auth-forms').hidden=false;showAuthTab('reset');fill($('reset-form'),'email',user.email);};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
+for(const id of ['day-dialog','candidate-dialog'])$(id).addEventListener('click',e=>{if(e.target===$(id))$(id).close();});
 const currentYear=Number(selected.slice(0,4));
 for(let y=2025;y<=Math.max(currentYear+2,2028);y++){$('year').append(new Option(String(y),String(y)));}
 $('year').value=String(currentYear);
@@ -73,46 +74,81 @@ function keyDate(d){return d.toISOString().slice(0,10);}
 function eventClass(e){return e.variants?'shared':e.user_id!==null?'personal':'m'+e.method;}
 function visibleEvents(){const q=$('calendar-search').value.trim().toLocaleLowerCase('vi');return groupCalendarEvents(calendarData.events.filter(e=>($('personal-visible').checked||e.user_id===null)&&(!q||(e.title+' '+e.note).toLocaleLowerCase('vi').includes(q))));}
 function onDay(e,k){return dateKey(e.starts)<=k&&dateKey(e.ends)>=k;}
-function eventRow(e){const row=button(e.title,()=>showEvent(e),'event-row');row.append(el('small',timeText(e.starts)+(e.ends!==e.starts?' → '+timeText(e.ends):'')+(e.variants?' · Phương thức '+e.variants.map(v=>v.method).join(', '):'')));return row;}
+function eventRow(e){const row=button(e.title,()=>showEvent(e),'event-row '+(e.id===searchId?'search-hit':''));row.append(el('small',timeText(e.starts)+(e.ends!==e.starts?' → '+timeText(e.ends):'')+(e.variants?' · Phương thức '+e.variants.map(v=>v.method).join(', '):'')));return row;}
+let searchIndex=-1,searchId=null;
+function jumpToDate(k){selected=k;month=new Date(k+'T00:00:00Z');month.setUTCDate(1);}
+function searchResults(){return visibleEvents().slice().sort((a,b)=>a.starts-b.starts||a.id.localeCompare(b.id));}
+function moveSearch(delta=0,reset=false){
+ const q=$('calendar-search').value.trim(),items=searchResults();
+ if(!q||!items.length){searchIndex=-1;searchId=null;renderCalendar();return;}
+ searchIndex=reset?0:(searchIndex+delta+items.length)%items.length;
+ const e=items[searchIndex];searchId=e.id;jumpToDate(dateKey(e.starts));
+ if($('calendar-view').value==='agenda')$('calendar-view').value='month';
+ renderCalendar();
+}
+function updateSearchControls(events){
+ const q=$('calendar-search').value.trim(),index=events.slice().sort((a,b)=>a.starts-b.starts||a.id.localeCompare(b.id)).findIndex(e=>e.id===searchId);
+ searchIndex=index;
+ $('search-count').textContent=!q?'Tìm trong năm và phương thức đang chọn':!events.length?'Không tìm thấy sự kiện':(index>=0?index+1:0)+' / '+events.length+' kết quả · Enter để chuyển tiếp';
+ $('search-prev').disabled=$('search-next').disabled=!q||!events.length;
+}
+function showDay(k,events){
+ jumpToDate(k);renderCalendar();
+ $('day-dialog-title').textContent=new Intl.DateTimeFormat('vi-VN',{dateStyle:'full',timeZone:'UTC'}).format(new Date(k+'T00:00:00Z'));
+ const list=$('day-dialog-list');list.replaceChildren();
+ const matches=events.filter(e=>onDay(e,k));list.append(el('p',matches.length+' sự kiện','hint'));
+ for(const e of matches){const b=button(e.title,()=>{$('day-dialog').close();showEvent(e);},'event-row '+eventClass(e));b.append(el('small',timeText(e.starts)+' → '+timeText(e.ends)));list.append(b);}
+ $('day-dialog').showModal();
+}
+function makeDay(d,events,week=false){
+ const k=keyDate(d),cell=el('div',undefined,'day'+(!week&&d.getUTCMonth()!==month.getUTCMonth()?' outside':'')+(k===selected?' selected':'')+(k===dateKey(Date.now()/1000)?' current-day':''));
+ const label=week?['CN','T2','T3','T4','T5','T6','T7'][d.getUTCDay()]+' · '+d.getUTCDate()+'/'+(d.getUTCMonth()+1):String(d.getUTCDate());
+ const num=button(label,()=>{jumpToDate(k);renderCalendar();},'day-number'+(k===dateKey(Date.now()/1000)?' today':''));
+ num.setAttribute('aria-label','Ngày '+k);cell.append(num);
+ const matches=events.filter(e=>onDay(e,k)),limit=week?5:3;
+ const sorted=matches.slice().sort((a,b)=>Number(b.id===searchId)-Number(a.id===searchId));
+ for(const e of sorted.slice(0,limit)){const b=button(e.title,()=>showEvent(e),'event-chip '+eventClass(e)+(e.id===searchId?' search-hit':''));b.title=e.title;cell.append(b);}
+ if(matches.length>limit){const more=button('+'+(matches.length-limit)+' mốc',()=>showDay(k,events),'event-chip more-events');more.setAttribute('aria-label','Xem tất cả '+matches.length+' sự kiện ngày '+k);cell.append(more);}
+ if(week&&!matches.length)cell.append(el('span','—','hint'));return cell;
+}
 function renderCalendar(){
-  const view=$('calendar-view').value;
-  $('month-grid').hidden=view!=='month';document.querySelector('.weekdays').hidden=view!=='month';$('alternate-view').hidden=view==='month';
-  $('month-label').textContent='Tháng '+(month.getUTCMonth()+1)+', '+month.getUTCFullYear();
-  const grid=$('month-grid');grid.replaceChildren();const start=new Date(month);
-  start.setUTCDate(1-(start.getUTCDay()+6)%7);const events=visibleEvents();
-  for(let i=0;i<42;i++){
-    const d=new Date(start);d.setUTCDate(start.getUTCDate()+i);const k=keyDate(d);
-    const cell=el('div',undefined,'day'+(d.getUTCMonth()!==month.getUTCMonth()?' outside':'')+(k===selected?' selected':''));
-    cell.append(button(String(d.getUTCDate()),()=>{selected=k;month=new Date(k+'T00:00:00Z');month.setUTCDate(1);renderCalendar();},'day-number'+(k===dateKey(Date.now()/1000)?' today':'')));
-    const matches=events.filter(e=>onDay(e,k));
-    for(const e of matches.slice(0,3)){const b=button(e.title,()=>showEvent(e),'event-chip '+eventClass(e));b.title=e.title;cell.append(b);}
-    if(matches.length>3)cell.append(button('+'+(matches.length-3)+' mốc',()=>{selected=k;renderCalendar();},'event-chip'));
-    grid.append(cell);
-  }
-  $('selected-day-title').textContent='Ngày '+selected.split('-').reverse().join('/');
-  const day=$('day-events');day.replaceChildren();const matches=events.filter(e=>onDay(e,selected));
-  if(!matches.length)day.append(el('p','Không có sự kiện.','hint'));else for(const e of matches)day.append(eventRow(e));
-  const year=$('year-events');year.replaceChildren();
-  const official=events.filter(e=>e.user_id===null);
-  if(!official.length)year.append(el('p','Chưa có mốc được xác minh cho lựa chọn này.','hint'));
-  else for(const e of official)year.append(eventRow(e));
-  renderAlternative(view,events);renderCountdown(events);
+ const view=$('calendar-view').value,events=visibleEvents();
+ $('month-grid').hidden=view!=='month';document.querySelector('.weekdays').hidden=view!=='month';$('alternate-view').hidden=view==='month';
+ const fmt=new Intl.DateTimeFormat('vi-VN',{dateStyle:'full',timeZone:'UTC'}),selectedDate=new Date(selected+'T00:00:00Z');
+ const monday=new Date(selectedDate);monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
+ const sunday=new Date(monday);sunday.setUTCDate(sunday.getUTCDate()+6);
+ $('month-label').textContent=view==='week'?('Tuần '+keyDate(monday).split('-').reverse().join('/')+' – '+keyDate(sunday).split('-').reverse().join('/')):view==='day'?fmt.format(selectedDate):view==='agenda'?'Sự kiện sắp tới':'Tháng '+(month.getUTCMonth()+1)+', '+month.getUTCFullYear();
+ $('prev').setAttribute('aria-label',view==='week'?'Tuần trước':view==='day'?'Ngày trước':'Tháng trước');$('next').setAttribute('aria-label',view==='week'?'Tuần sau':view==='day'?'Ngày sau':'Tháng sau');$('prev').hidden=$('next').hidden=view==='agenda';
+ const grid=$('month-grid');grid.replaceChildren();const start=new Date(month);start.setUTCDate(1-(start.getUTCDay()+6)%7);
+ if(view==='month')for(let i=0;i<42;i++){const d=new Date(start);d.setUTCDate(start.getUTCDate()+i);grid.append(makeDay(d,events));}
+ $('selected-day-title').textContent='Ngày '+selected.split('-').reverse().join('/');
+ const day=$('day-events');day.replaceChildren();const matches=events.filter(e=>onDay(e,selected));
+ if(!matches.length)day.append(el('p','Không có sự kiện.','hint'));else for(const e of matches)day.append(eventRow(e));
+ const year=$('year-events');year.replaceChildren();const official=events.filter(e=>e.user_id===null);
+ if(!official.length)year.append(el('p','Chưa có mốc được xác minh cho lựa chọn này.','hint'));else for(const e of official)year.append(eventRow(e));
+ renderAlternative(view,events);renderCountdown(events);updateSearchControls(events);
 }
 function renderAlternative(view,events){
-  const b=$('alternate-view');b.replaceChildren();if(view==='month')return;
-  if(view==='agenda'){
-    const now=Date.now()/1000, upcoming=events.filter(e=>e.ends>=now).sort((a,b)=>Math.max(now,a.starts)-Math.max(now,b.starts));
-    if(!upcoming.length)b.append(el('p','Không có sự kiện sắp tới trong bộ lọc.','hint'));
-    for(const e of upcoming)b.append(eventRow(e));return;
-  }
-  const d=new Date(selected+'T00:00:00Z');
-  if(view==='week')d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);
-  for(let i=0;i<(view==='week'?7:1);i++){
-    const key=keyDate(d),section=el('section',undefined,'entry');section.append(el('h3',key.split('-').reverse().join('/')));
-    const list=events.filter(e=>onDay(e,key));
-    if(!list.length)section.append(el('p','Không có sự kiện.','hint'));else for(const e of list)section.append(eventRow(e));
-    b.append(section);d.setUTCDate(d.getUTCDate()+1);
-  }
+ const b=$('alternate-view');b.replaceChildren();b.className='view-'+view;if(view==='month')return;
+ const now=Date.now()/1000,today=dateKey(now),fmt=new Intl.DateTimeFormat('vi-VN',{dateStyle:'full',timeZone:'UTC'});
+ if(view==='week'){
+  const d=new Date(selected+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);const grid=el('div',undefined,'week-grid');
+  for(let i=0;i<7;i++){grid.append(makeDay(new Date(d),events,true));d.setUTCDate(d.getUTCDate()+1);}b.append(grid);return;
+ }
+ if(view==='agenda'){
+  const upcoming=events.filter(e=>e.ends>=now).sort((a,b)=>Math.max(now,a.starts)-Math.max(now,b.starts)||a.ends-b.ends);
+  const intro=el('div',undefined,'agenda-intro');intro.append(el('p','HÔM NAY','eyebrow'),el('h2',fmt.format(new Date(today+'T00:00:00Z'))),el('p',upcoming.length+' sự kiện đang diễn ra hoặc sắp tới · Múi giờ Việt Nam','hint'));b.append(intro);
+  if(!upcoming.length)b.append(el('p','Không có sự kiện sắp tới. Chọn năm khác hoặc thêm sự kiện cá nhân.','empty-state'));
+  let group='',section;
+  for(const e of upcoming){const k=e.starts<=now?today:dateKey(e.starts);
+   if(k!==group){group=k;section=el('section',undefined,'agenda-group');section.append(el('h3',k===today?'Hôm nay / Đang diễn ra':fmt.format(new Date(k+'T00:00:00Z'))));b.append(section);}
+   const row=eventRow(e);row.classList.add('agenda-event',eventClass(e));row.append(el('span',e.starts<=now?'Đang diễn ra':'Còn '+Math.max(1,Math.ceil((e.starts-now)/86400))+' ngày','event-status'));section.append(row);
+  }return;
+ }
+ const intro=el('div',undefined,'agenda-intro');intro.append(el('p',selected===today?'HÔM NAY':'LỊCH TRONG NGÀY','eyebrow'),el('h2',fmt.format(new Date(selected+'T00:00:00Z'))));b.append(intro);
+ const matches=events.filter(e=>onDay(e,selected)).sort((a,b)=>a.starts-b.starts);intro.append(el('p',matches.length+' sự kiện · Giờ Việt Nam','hint'));
+ if(!matches.length)b.append(el('p','Không có sự kiện trong ngày này.','empty-state'));
+ for(const e of matches){const row=eventRow(e);row.classList.add('agenda-event',eventClass(e));row.append(el('span',e.user_id!==null?'Cá nhân':e.variants?'Nhiều phương thức':'Phương thức '+e.method,'event-status'));b.append(row);}
 }
 function renderCountdown(events){
   const b=$('countdown');b.replaceChildren();const now=Date.now()/1000;
@@ -126,12 +162,12 @@ function moveCalendar(direction){
   else{const d=new Date(selected+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+direction*(view==='week'?7:1));selected=keyDate(d);month=new Date(selected+'T00:00:00Z');month.setUTCDate(1);}
   renderCalendar();
 }
-$('calendar-view').onchange=renderCalendar;$('calendar-search').oninput=renderCalendar;
+$('calendar-view').onchange=renderCalendar;$('calendar-search').oninput=()=>moveSearch(0,true);$('search-prev').onclick=()=>moveSearch(-1);$('search-next').onclick=()=>moveSearch(1);$('calendar-search').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();moveSearch(e.shiftKey?-1:1);}};
 async function loadCalendar(jump=false){
   calendarData=await api('/calendar?'+new URLSearchParams({year:$('year').value,method:$('method').value}));
   const method=$('method').value;$('follow-method').disabled=!user||method==='all';$('follow-method').checked=calendarData.follows.includes(method);
   if(jump){const first=calendarData.events.find(e=>e.user_id===null);const y=Number($('year').value);month=first?new Date(dateKey(first.starts)+'T00:00:00Z'):new Date(Date.UTC(y,0,1));selected=keyDate(month);month.setUTCDate(1);}
-  renderCalendar();await refreshChecklist();renderPersonalPlans();await refreshProposals();
+  if($('calendar-search').value.trim())moveSearch(0,true);else renderCalendar();await refreshChecklist();renderPersonalPlans();await refreshProposals();
 }
 $('prev').onclick=()=>moveCalendar(-1);
 $('next').onclick=()=>moveCalendar(1);
@@ -317,18 +353,39 @@ $('official-form').onsubmit=e=>{e.preventDefault();safe(async()=>{const d=fields
   if(!confirm('Bạn đã đối chiếu đúng ngày, năm, phương thức và nguồn HCMUS?'))return;
   await api('/admin/calendar',{method:'POST',body:d});flash('Đã lưu mốc chính thức.');await loadOfficialEvents();
 });};
+async function reviewCandidate(c){
+ const b=$('candidate-review');b.replaceChildren();
+ b.append(el('p','Kiểm tra nội dung gốc và xác nhận đầy đủ trước khi công bố.','hint'),sourceLink(c.url),el('pre',c.evidence,'review-evidence'),el('p',c.precision_note,'plan-warning'));
+ const f=el('form',undefined,'review-form');
+ function field(title,name,type,value){const l=el('label',title),n=document.createElement(type==='textarea'?'textarea':'input');n.name=name;if(type!=='textarea')n.type=type;n.value=value??'';n.required=name!=='note';if(name==='title')n.maxLength=160;if(name==='note')n.maxLength=500;l.append(n);f.append(l);return n;}
+ const choose=el('label','Công bố vào sự kiện');const sel=document.createElement('select');sel.name='id';sel.append(new Option('Thêm mốc mới',''));
+ const data=await api('/calendar?year='+c.year+'&method=all');
+ for(const e of data.events.filter(e=>e.user_id===null&&e.method===c.method))sel.append(new Option(e.title+' · '+timeText(e.ends),e.id));
+ choose.append(sel);f.append(choose);
+ field('Năm tuyển sinh','year','number',c.year).readOnly=true;field('Phương thức','method','text',c.method).readOnly=true;field('Tiêu đề','title','text',c.title);
+ field('Bắt đầu (giờ Việt Nam)','start','datetime-local',c.starts===null?'':localInput(c.starts));field('Kết thúc (giờ Việt Nam)','end','datetime-local',localInput(c.ends));field('Ghi chú / điều kiện','note','textarea',c.precision_note);
+ const check=el('label',undefined,'check review-confirm'),input=document.createElement('input');input.type='checkbox';input.required=true;check.append(input,document.createTextNode('Tôi đã đọc nguồn, xác nhận đối tượng, ngày giờ và chọn đúng sự kiện mới / cũ.'));f.append(check);
+ const actions=el('div',undefined,'controls'),submit=el('button','Xác minh & công bố');submit.type='submit';actions.append(submit,button('Hủy — chưa quyết định',()=>$('candidate-dialog').close()));f.append(actions);
+ f.onsubmit=e=>{e.preventDefault();safe(async()=>{submit.disabled=true;try{const d=fields(f);d.id=d.id||null;d.year=Number(d.year);d.start=dateISO(d.start);d.end=dateISO(d.end);d.source_url=c.url;
+  await api('/admin/monitor/candidates/'+c.id+'/publish',{method:'POST',body:d});
+  $('candidate-dialog').close();flash('✓ Đã xác minh và công bố lịch.');await Promise.all([loadCandidates(),loadOfficialEvents()]);
+ }finally{submit.disabled=false;}});};
+ b.append(f);$('candidate-dialog').showModal();
+}
 async function loadCandidates(){
-  const d=await api('/admin/monitor/candidates'),b=$('deadline-candidates');b.replaceChildren();
-  if(!d.items.length)b.append(el('p','Không có đề xuất chờ xử lý.','hint'));
-  for(const c of d.items){
-    const row=el('div',undefined,'entry');row.append(el('strong',c.year+' · '+c.method+' · '+c.title),el('p',(c.starts===null?'Chưa xác định bắt đầu':timeText(c.starts))+' → '+timeText(c.ends)),el('pre',c.evidence),el('p',c.precision_note,'hint'),sourceLink(c.url));
-    row.append(button('Điền vào form để kiểm chứng',async()=>{
-      const f=$('official-form');fill(f,'year',c.year);await loadOfficialEvents();fill(f,'method',c.method);fill(f,'title',c.title);fill(f,'start',c.starts===null?'':localInput(c.starts));fill(f,'end',localInput(c.ends));fill(f,'source_url',c.url);fill(f,'note',c.precision_note);f.scrollIntoView({behavior:'smooth'});
-      flash('Đã điền đề xuất. Kiểm tra nguồn và chọn sự kiện cũ nếu đây là gia hạn; chưa công bố lịch.');
-    }));
-    for(const [label,decision] of [['Đã kiểm chứng / xử lý','reviewed'],['Bỏ đề xuất','rejected']])row.append(button(label,async()=>{if(!confirm('Ghi nhận trạng thái đề xuất?'))return;await api('/admin/monitor/candidates/'+c.id+'/decision',{method:'POST',body:{decision}});await loadCandidates();}));
-    b.append(row);
-  }
+ const d=await api('/admin/monitor/candidates?history=true'),b=$('deadline-candidates');b.replaceChildren();
+ const pending=d.items.filter(c=>c.state==='pending'),history=d.items.filter(c=>c.state!=='pending');
+ b.append(el('h3','Chờ xử lý · '+pending.length,'candidate-section-title'));
+ if(!pending.length)b.append(el('p','Không có đề xuất chờ xử lý.','empty-state'));
+ function card(c){
+  const row=el('article',undefined,'candidate-card '+c.state),header=el('div',undefined,'candidate-head');
+  header.append(el('strong',c.year+' · Phương thức '+c.method+' · '+c.title),el('span',({pending:'Chờ xác minh',reviewed:'✓ Đã xử lý',rejected:'✕ Đã từ chối',superseded:'Đã có phiên bản mới'})[c.state]||c.state,'review-status '+c.state));
+  row.append(header,el('p',(c.starts===null?'Chưa xác định bắt đầu':timeText(c.starts))+' → '+timeText(c.ends),'candidate-dates'),el('pre',c.evidence,'review-evidence'),el('p',c.precision_note,'hint'),sourceLink(c.url));
+  if(c.state==='pending'){const actions=el('div',undefined,'controls');actions.append(button('Điền vào form để kiểm chứng',()=>reviewCandidate(c),'primary-action'),button('Từ chối đề xuất',async()=>{if(!confirm('Từ chối đề xuất này? Lịch hiện tại không thay đổi.'))return;await api('/admin/monitor/candidates/'+c.id+'/decision',{method:'POST',body:{decision:'rejected'}});await loadCandidates();},'secondary reject-action'));row.append(actions);}
+  else if(c.reviewed_at)row.append(el('p','Xử lý lúc '+timeText(c.reviewed_at),'hint'));
+  return row;
+ }
+ for(const c of pending)b.append(card(c));b.append(el('h3','Lịch sử xử lý · '+history.length,'candidate-section-title'));for(const c of history)b.append(card(c));
 }
 async function loadAdminChanges(){
   const data=await api('/monitor');$('official-source').replaceChildren(...data.sources.map(s=>new Option(s.label,s.url)));
