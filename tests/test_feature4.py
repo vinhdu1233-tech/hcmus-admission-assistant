@@ -65,7 +65,10 @@ def test_f4_linked_progress_in_reminder(env):
     with db() as c:t=c.execute("SELECT starts FROM events WHERE id=?",(i,)).fetchone()[0]
     queue_reminders(t-7*86400+1);queue_reminders(t-7*86400+2)
     rows=s.get("/product/calendar/notices").json()["items"]
-    assert len(rows)==1 and "Checklist còn 1 việc" in rows[0]["title"]
+    reminders=[n for n in rows if n["kind"]=="reminder"]
+    announcements=[n for n in rows if n["kind"]=="announcement"]
+    assert len(reminders)==1 and "Checklist còn 1 việc" in reminders[0]["title"]
+    assert len(announcements)==1 and announcements[0]["event_id"]==i
 def test_f4_inbox_read_and_deep_link_isolation(env):
     s=client();b=client();register(s,env);register(b,env,"other@example.test","other");login(s);login(b,"other")
     i=event(s,days=2)
