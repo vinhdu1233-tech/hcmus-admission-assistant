@@ -6,6 +6,7 @@
   for(const nav of document.querySelectorAll('.desktop-nav,#mobile-nav')){
     const account=document.createElement('a');
     account.href='/portal.html#account';account.textContent=user?'Tài khoản':'Đăng nhập';nav.append(account);
+    if(user){const n=document.createElement('a');n.href='/portal.html#calendar';n.textContent='Thông báo';nav.append(n);fetch('/api/product/calendar/notices',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(d=>{if(d?.unread)n.textContent='Thông báo ('+d.unread+')';}).catch(()=>{});}
     if(user?.role==='admin'){
       const admin=document.createElement('a');admin.href='/portal.html#dashboard';admin.textContent='Dashboard';nav.append(admin);
     }

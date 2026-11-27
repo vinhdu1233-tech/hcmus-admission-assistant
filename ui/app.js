@@ -357,4 +357,51 @@ document.querySelectorAll('.js-open-planner').forEach(button=>{
   requestAnimationFrame(()=>document.getElementById('planner').scrollIntoView({behavior:'smooth'}));
  });
 });
+// Explicit account link: never silently upload an old shared-device checklist.
+const linkPlan=document.createElement('button');linkPlan.type='button';linkPlan.textContent='Liên kết với lịch tài khoản';linkPlan.className='planner-reset';planner.reset.after(linkPlan);
+let linkedAccount=null,linkedKeys=new Set(),syncChain=Promise.resolve();
+async function accountNow(){const r=await fetch('/api/product/auth/me',{cache:'no-store'});if(!r.ok)throw Error('Không kết nối được tài khoản');return (await r.json()).user;}
+function planPayload(){
+ const m=selectedMethod(),p=selectedPath();
+ return {year:Number(planner.year.value),method:m.id,path:p?.id||'',tasks:[...commonTasks(planner.year.value),...m.tasks,...(p?.tasks||[]),...plannerState.extra].map(t=>({id:t.id,title:t.title,done:plannerState.done.includes(t.id)}))};
+}
+async function sendPlan(payload,expected){
+ const u=await accountNow();if(!u||u.id!==expected)throw Error('Phiên tài khoản đã thay đổi');
+ const r=await fetch('/api/product/calendar/checklist',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ if(!r.ok)throw Error('Không lưu được checklist lên tài khoản');
+ planner.saved.textContent='ĐÃ LIÊN KẾT VỚI LỊCH TÀI KHOẢN';
+}
+linkPlan.onclick=async()=>{
+ try{
+  const u=await accountNow();
+  if(!u){location.href='/portal.html#account';return;}
+  if(!selectedMethod())return;
+  if(!confirm('Lưu bản checklist đang hiển thị vào tài khoản '+u.username+'? Các lời nhắc sẽ dùng tiến độ này.'))return;
+  await sendPlan(planPayload(),u.id);linkedAccount=u.id;linkedKeys.add(plannerKey());
+ }catch(e){planner.saved.textContent=e.message;}
+};
+const restorePlan=document.createElement('button');restorePlan.type='button';restorePlan.textContent='Tải checklist từ tài khoản';restorePlan.className='planner-reset';linkPlan.after(restorePlan);
+restorePlan.onclick=async()=>{
+ try{
+  const u=await accountNow();if(!u){location.href='/portal.html#account';return;}
+  const m=selectedMethod();if(!m)return;
+  const key=plannerKey(),path=selectedPath()?.id||'';
+  const r=await fetch('/api/product/calendar/checklist?'+new URLSearchParams({year:planner.year.value,method:m.id}),{cache:'no-store'});
+  if(!r.ok)throw Error('Không tải được checklist');
+  const p=(await r.json()).items.find(x=>x.path===path);
+  if(!p){planner.saved.textContent='Chưa có bản lưu trên tài khoản';return;}
+  if(key!==plannerKey())return;
+  if(!confirm('Thay checklist đang hiển thị bằng bản lưu của '+u.username+'?'))return;
+  plannerState={done:p.tasks.filter(t=>t.done).map(t=>t.id),extra:p.tasks.filter(t=>t.id.startsWith('custom-')).map(t=>({id:t.id,title:t.title}))};
+  linkedAccount=u.id;linkedKeys.add(key);savePlanner();renderPlanner();
+ }catch(e){planner.saved.textContent=e.message;}
+};
+const originalSave=savePlanner;
+savePlanner=function(){
+ originalSave();
+ if(linkedAccount&&linkedKeys.has(plannerKey())&&selectedMethod()){
+  const payload=planPayload(),uid=linkedAccount;
+  syncChain=syncChain.catch(()=>{}).then(()=>sendPlan(payload,uid)).catch(e=>{planner.saved.textContent=e.message;});
+ }
+};
 updateMethods('2');
