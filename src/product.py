@@ -66,13 +66,33 @@ def propose_update(c,uid,e,old=None):
     c.execute("""UPDATE notices SET title='Lịch cá nhân cũ (không phải hạn chính thức mới): '||title
       WHERE user_id=? AND event_id=? AND kind='reminder' AND title NOT LIKE 'Lịch cá nhân cũ (%'
       AND EXISTS(SELECT 1 FROM deliveries d WHERE d.notice_id=notices.id AND d.state='pending')""",(uid,e["id"]))
-def notice(c,uid,event,kind,key,title):
+def notice(c,uid,event,kind,key,title,push=True):
     now=time.time()
     c.execute("INSERT OR IGNORE INTO notices(user_id,event_id,kind,dedupe_key,title,created_at) VALUES (?,?,?,?,?,?)",(uid,event,kind,key,title,now))
     n=c.execute("SELECT id,created_at FROM notices WHERE dedupe_key=?",(key,)).fetchone()
-    if now-n["created_at"]<86400:
+    if push and now-n["created_at"]<86400:
         c.execute("""INSERT OR IGNORE INTO deliveries(notice_id,subscription_id,next_attempt)
           SELECT ?,id,? FROM push_subscriptions WHERE user_id=? AND enabled=1""",(n["id"],now,uid))
+def announce_other_students(c,event,targeted,label):
+    """Public admission updates in student inboxes; no personal plan or push unless subscribed."""
+    for row in c.execute("SELECT id FROM users WHERE role='student'").fetchall():
+        uid=row[0]
+        if uid not in targeted:
+            notice(c,uid,event["id"],"announcement",f"announcement:{event['id']}:{event['revision']}:{uid}",
+                   f"{label} · {event['year']} · Phương thức {event['method']}: {event['title']}",push=False)
+
+@router.get("/admin/overview")
+def admin_overview(request:Request):
+    require_admin(request)
+    with db() as c:
+        return {
+            "students":c.execute("SELECT COUNT(*) FROM users WHERE role='student'").fetchone()[0],
+            "locked":c.execute("SELECT COUNT(*) FROM users WHERE hard_locked=1 OR locked_until>?",(time.time(),)).fetchone()[0],
+            "questions":c.execute("SELECT COUNT(*) FROM question_logs WHERE created_at>=?",(time.time()-30*86400,)).fetchone()[0],
+            "pending":c.execute("SELECT COUNT(*) FROM deadline_candidates WHERE state='pending'").fetchone()[0],
+            "sources":c.execute("SELECT COUNT(*) FROM monitor_sources").fetchone()[0],
+            "official":c.execute("SELECT COUNT(*) FROM events WHERE user_id IS NULL").fetchone()[0],
+        }
 @router.get("/admin/questions")
 def admin_questions(request:Request,start:str|None=None,end:str|None=None,sort:Literal["newest","oldest"]="newest",limit:int=Query(50,ge=1,le=200),offset:int=Query(0,ge=0)):
     require_admin(request)
@@ -167,16 +187,20 @@ def save_official(body:OfficialEvent, candidate_id=None, reviewer=None):
                    UNION SELECT user_id FROM reminders WHERE event_id=?
                    UNION SELECT user_id FROM personal_event_plans WHERE event_id=?
                    UNION SELECT user_id FROM calendar_update_proposals WHERE event_id=? AND state IN ('pending','deferred')""",(old["method"],body.method,ident,ident,ident)).fetchall()
-                for r in ids:
-                    propose_update(c,r[0],updated,old)
-                    notice(c,r[0],ident,"change",f"change:{ident}:{revision}:{r[0]}","Lịch chính thức đã đổi — xác nhận kế hoạch cá nhân: "+body.title)
+                targeted={r[0] for r in ids}
+                for uid in targeted:
+                    propose_update(c,uid,updated,old)
+                    notice(c,uid,ident,"change",f"change:{ident}:{revision}:{uid}","Lịch chính thức đã đổi — xác nhận kế hoạch cá nhân: "+body.title)
+                announce_other_students(c,updated,targeted,"Lịch tuyển sinh đã cập nhật")
         else:
             ident="official-"+str(uuid.uuid4())
             c.execute("INSERT INTO events(id,title,starts,ends,year,method,source_url,note) VALUES (?,?,?,?,?,?,?,?)",(ident,body.title,start,end,body.year,body.method,body.source_url,body.note))
             updated=c.execute("SELECT * FROM events WHERE id=?",(ident,)).fetchone()
-            for r in c.execute("SELECT user_id FROM method_follows WHERE method=?",(body.method,)).fetchall():
-                propose_update(c,r[0],updated)
-                notice(c,r[0],ident,"change",f"new:{ident}:{r[0]}","Mốc tuyển sinh mới — chọn thêm vào kế hoạch: "+body.title)
+            targeted={r[0] for r in c.execute("SELECT user_id FROM method_follows WHERE method=?",(body.method,)).fetchall()}
+            for uid in targeted:
+                propose_update(c,uid,updated)
+                notice(c,uid,ident,"change",f"new:{ident}:{uid}","Mốc tuyển sinh mới — chọn thêm vào kế hoạch: "+body.title)
+            announce_other_students(c,updated,targeted,"Mốc tuyển sinh mới được công bố")
         if candidate_id is not None:
             c.execute("UPDATE deadline_candidates SET state='reviewed',reviewed_at=?,reviewed_by=? WHERE id=?",(time.time(),reviewer,candidate_id))
     return {"id":ident}
@@ -339,10 +363,11 @@ def save_checklist(body:ChecklistBody,request:Request):
       (uid,body.year,body.method,body.path,json.dumps([t.model_dump() for t in body.tasks],ensure_ascii=False),time.time()))
     return {"ok":True}
 @router.get("/calendar/checklist")
-def get_checklist(request:Request,year:int=2026,method:str="all"):
+def get_checklist(request:Request,year:int=2026,method:str="all",account_id:int|None=None):
     uid=require_user(request)["id"]
+    if account_id is not None and account_id!=uid:error(409,"Phiên tài khoản đã thay đổi.")
     with db() as c:rows=c.execute("SELECT year,method,path,tasks,updated_at FROM checklist_progress WHERE user_id=? AND (?=0 OR year=?) AND (?='all' OR method=?) ORDER BY updated_at DESC",(uid,year,year,method,method)).fetchall()
-    return {"items":[{**dict(r),"tasks":json.loads(r["tasks"])} for r in rows]}
+    return {"account_id":uid,"items":[{**dict(r),"tasks":json.loads(r["tasks"])} for r in rows]}
 @router.get("/admin/monitor/candidates")
 def candidates(request:Request,history:bool=False):
     require_admin(request)

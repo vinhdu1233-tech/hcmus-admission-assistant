@@ -160,7 +160,7 @@ async function handleProduct(req,res,url) {
 
 const server = http.createServer(async (req,res) => {
   const url = new URL(req.url || '/',`http://localhost:${PORT}`);
-  if (url.pathname === '/api/config' && req.method === 'GET') return json(res,200,{mode:MODE,version:'1.0.0'});
+  if (url.pathname === '/api/config' && req.method === 'GET') return json(res,200,{mode:MODE,version:'1.1.0',release:'workspace-r2'});
   if (url.pathname === '/api/chat' && req.method === 'POST') return handleChat(req,res);
   if (url.pathname === '/api/conversation/reset' && req.method === 'POST') return handleConversationReset(req,res);
   if (url.pathname.startsWith('/api/product/')) return handleProduct(req,res,url);
@@ -177,7 +177,7 @@ const server = http.createServer(async (req,res) => {
   if (!CONTENT_TYPES[path.extname(absolute).toLowerCase()]) {res.writeHead(404);return res.end('Not found');}
   try {
     const content=await readFile(absolute);
-    res.writeHead(200,{'Content-Type':CONTENT_TYPES[path.extname(absolute).toLowerCase()],'X-Content-Type-Options':'nosniff','Cache-Control':'no-cache'});
+    res.writeHead(200,{'Content-Type':CONTENT_TYPES[path.extname(absolute).toLowerCase()],'X-Content-Type-Options':'nosniff','Cache-Control':/\.(?:html|js|mjs|css)$/i.test(absolute)?'no-store':'no-cache'});
     return res.end(req.method==='HEAD'?undefined:content);
   } catch {res.writeHead(404);return res.end('Not found');}
 });

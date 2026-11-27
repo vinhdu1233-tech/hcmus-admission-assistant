@@ -32,6 +32,9 @@ function fields(form){return Object.fromEntries(new FormData(form));}
 function showAuthTab(tab){for(const f of ['login','register','reset']){$(f+'-form').hidden=f!==tab;document.querySelector('[data-auth-tab="'+f+'"]').classList.toggle('active',f===tab);}}
 document.querySelectorAll('[data-auth-tab]').forEach(b=>b.onclick=()=>showAuthTab(b.dataset.authTab));
 showAuthTab('login');
+function announceAccountChange(){try{localStorage.setItem('hcmus:auth-change',String(Date.now())+Math.random());}catch{}}
+window.addEventListener('storage',e=>{if(e.key==='hcmus:auth-change'){document.querySelector('main').hidden=true;location.reload();}});
+window.addEventListener('pageshow',e=>{if(e.persisted)location.reload();});
 async function refreshUser(){
   user=(await api('/auth/me')).user;
   $('nav-dashboard').hidden=user?.role!=='admin';$('nav-notices').hidden=!user;if(user){const n=await api('/calendar/notices');$('unread-count').textContent=n.unread?'('+n.unread+')':'';}$('nav-account').textContent=user?'Tài khoản':'Đăng nhập';
@@ -48,21 +51,21 @@ async function showPage(){
 }
 window.addEventListener('hashchange',()=>safe(showPage));
 $('login-form').addEventListener('submit',event=>{event.preventDefault();safe(async()=>{
-  const d=fields(event.target);await api('/auth/login',{method:'POST',body:d});event.target.reset();await refreshUser();
-  location.href='/';
+  const d=fields(event.target);await api('/auth/login',{method:'POST',body:d});event.target.reset();
+  announceAccountChange();location.replace('/');
 });});
 $('register-form').addEventListener('submit',event=>{event.preventDefault();safe(async()=>{
   await api('/auth/register',{method:'POST',body:fields(event.target)});event.target.reset();showAuthTab('login');flash('Đăng ký thành công. Hãy đăng nhập.');
 });});
 $('reset-form').addEventListener('submit',event=>{event.preventDefault();safe(async()=>{
-  await api('/auth/reset',{method:'POST',body:fields(event.target)});event.target.reset();await refreshUser();showAuthTab('login');flash('Đã đổi mật khẩu. Hãy đăng nhập lại.');
+  await api('/auth/reset',{method:'POST',body:fields(event.target)});event.target.reset();announceAccountChange();location.replace('/portal.html#account');
 });});
 document.querySelectorAll('[data-send-code]').forEach(b=>b.addEventListener('click',()=>safe(async()=>{
   const f=b.closest('form'),email=f.elements.email;if(!email.reportValidity())return;
   b.disabled=true;try{const d=await api('/auth/'+b.dataset.sendCode+'/code',{method:'POST',body:{email:email.value}});flash(d.message||'Đã gửi mã.');setTimeout(()=>b.disabled=false,60000);}
   catch(e){b.disabled=false;throw e;}
 })));
-$('logout').onclick=()=>safe(async()=>{let sub=null;try{const reg=await navigator.serviceWorker?.getRegistration('/');sub=await reg?.pushManager?.getSubscription();}catch{}await api('/auth/logout',{method:'POST',body:sub?{endpoint:sub.endpoint}:{}});if(sub){try{await sub.unsubscribe();}catch{}}await refreshUser();showAuthTab('login');flash('Đã đăng xuất. Lịch riêng không còn hiển thị.');});
+$('logout').onclick=()=>safe(async()=>{let sub=null;try{const reg=await navigator.serviceWorker?.getRegistration('/');sub=await reg?.pushManager?.getSubscription();}catch{}await api('/auth/logout',{method:'POST',body:sub?{endpoint:sub.endpoint}:{}});if(sub){try{await sub.unsubscribe();}catch{}}announceAccountChange();location.replace('/portal.html#account');});
 $('change-password').onclick=()=>{ $('auth-forms').hidden=false;showAuthTab('reset');fill($('reset-form'),'email',user.email);};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 for(const id of ['day-dialog','candidate-dialog'])$(id).addEventListener('click',e=>{if(e.target===$(id))$(id).close();});
@@ -253,7 +256,8 @@ $('disable-push').onclick=()=>safe(async()=>{if(!requireLogin())return;const reg
 async function refreshChecklist(){
   const b=$('linked-checklist');b.replaceChildren();
   if(!user){b.append(el('p','Đăng nhập để liên kết checklist.','hint'));return;}
-  const data=await api('/calendar/checklist?'+new URLSearchParams({year:$('year').value,method:$('method').value}));
+  const owner=user.id;const data=await api('/calendar/checklist?'+new URLSearchParams({year:$('year').value,method:$('method').value,account_id:owner}));
+  if(user?.id!==owner||data.account_id!==owner)return;
   if(!data.items.length)b.append(el('p','Chưa có kế hoạch F3 đã lưu. Mở Checklist và chọn Liên kết với lịch.','hint'));
   for(const p of data.items){
     const row=el('div',undefined,'entry'),done=p.tasks.filter(t=>t.done).length;
@@ -310,9 +314,9 @@ async function refreshProposals(){
   }
 }
 async function refreshNotices(){const b=$('notices');b.replaceChildren();$('nav-notices').hidden=!user;$('read-all').hidden=!user;if(!user){b.append(el('p','Đăng nhập để xem thông báo của bạn.','hint'));return;}
-  const d=await api('/calendar/notices');if(!d.items.length)b.append(el('p','Chưa có thông báo.','hint'));
+  const owner=user.id;const d=await api('/calendar/notices');if(user?.id!==owner)return;if(!d.items.length)b.append(el('p','Chưa có thông báo.','hint'));
   $('unread-count').textContent=d.unread?'('+d.unread+')':'';
-  for(const n of d.items){const item=el('div',undefined,'entry'+(!n.read_at?' unread':''));item.append(el('strong',(!n.read_at?'● ':'')+n.title),el('p',timeText(n.created_at),'hint'),button('Xem sự kiện',async()=>{await api('/calendar/notices/'+n.id+'/read',{method:'POST',body:{}});await refreshNotices();if(n.kind==='change'){await refreshProposals();$('personal-plans-panel').scrollIntoView({behavior:'smooth'});}else await openNoticeEvent(n.event_id);}),button('Đã đọc',async()=>{await api('/calendar/notices/'+n.id+'/read',{method:'POST',body:{}});await refreshNotices();}));b.append(item);}
+  for(const n of d.items){const item=el('div',undefined,'entry'+(!n.read_at?' unread':''));item.append(el('span',n.kind==='announcement'?'Thông báo tuyển sinh':n.kind==='change'?'Cập nhật lịch':'Nhắc lịch','notice-type'),el('strong',(!n.read_at?'● ':'')+n.title),el('p',timeText(n.created_at),'hint'),button('Xem sự kiện',async()=>{await api('/calendar/notices/'+n.id+'/read',{method:'POST',body:{}});await refreshNotices();if(n.kind==='change'){await refreshProposals();$('personal-plans-panel').scrollIntoView({behavior:'smooth'});}else await openNoticeEvent(n.event_id);}),button('Đã đọc',async()=>{await api('/calendar/notices/'+n.id+'/read',{method:'POST',body:{}});await refreshNotices();}));b.append(item);}
 }
 $('read-all').onclick=()=>safe(async()=>{await api('/calendar/notices/read-all',{method:'POST',body:{}});await refreshNotices();});
 $('nav-notices').onclick=()=>setTimeout(()=>$('notices').scrollIntoView({behavior:'smooth'}),350);
@@ -398,4 +402,15 @@ async function loadAdmin(){if(user?.role!=='admin')return;await Promise.all([loa
 $('source-form').onsubmit=e=>{e.preventDefault();safe(async()=>{await api('/admin/monitor/sources',{method:'POST',body:fields(e.target)});e.target.reset();await loadAdminChanges();flash('Đã thêm nguồn. Worker sẽ kiểm tra ở lượt tiếp theo.');});};
 $('refresh-admin').onclick=()=>safe(loadAdmin);
 safe(async()=>{await refreshUser();await showPage();const id=new URLSearchParams(location.search).get('event');if(id&&location.hash==='#calendar')await openNoticeEvent(id);});
-setInterval(()=>{if(user&&location.hash==='#calendar')safe(async()=>{await refreshNotices();await refreshProposals();});},60000);
+let backgroundBusy=false;
+async function refreshAccountAndNotices(){
+ if(backgroundBusy||document.hidden)return;backgroundBusy=true;
+ try{
+  const current=(await api('/auth/me')).user;
+  if((current?.id||null)!==(user?.id||null)){document.querySelector('main').hidden=true;location.reload();return;}
+  if(user){await refreshNotices();if(location.hash==='#calendar')await refreshProposals();}
+ }catch{}finally{backgroundBusy=false;}
+}
+setInterval(refreshAccountAndNotices,10000);
+document.addEventListener('visibilitychange',refreshAccountAndNotices);
+window.addEventListener('focus',refreshAccountAndNotices);
