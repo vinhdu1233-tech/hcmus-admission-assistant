@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#183e66"><title>HCMUS Guide — Calendar & Account</title>
+<link rel="icon" href="/assets/h-icon.svg"><link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/portal.css"><script type="module" src="/portal.js"></script>
+</head>
+<body>
+<header class="top"><a href="/" class="brand"><strong>HCMUS</strong> GUIDE<span>ADMISSION & STUDY ASSISTANT</span></a>
+<nav><a href="/">Trang chủ</a><a href="#calendar" id="nav-calendar">Lịch tuyển sinh</a><a href="#dashboard" id="nav-dashboard" hidden>Dashboard</a><a href="#account" id="nav-account">Đăng nhập</a></nav></header>
+<main class="wrap">
+<div id="message" class="message" role="status" hidden></div>
+<section id="account" hidden>
+<div class="page-title"><div><p class="eyebrow">TÀI KHOẢN CỦA BẠN</p><h1>HCMUS Guide</h1></div><a href="#calendar">Về lịch →</a></div>
+<div id="signed-in" class="panel" hidden><h2 id="account-name"></h2><p id="account-role"></p><p>Phiên đăng nhập có hiệu lực tối đa 8 giờ. Các câu hỏi khi đăng nhập có thể được Admin xem, lưu tối đa 30 ngày. Không gửi dữ liệu nhạy cảm.</p><button id="logout">Đăng xuất</button><button class="secondary" id="change-password">Đổi mật khẩu qua email</button></div>
+<div id="auth-forms" class="panel auth-panel">
+<div class="tabs"><button data-auth-tab="login">Đăng nhập</button><button data-auth-tab="register">Đăng ký</button><button data-auth-tab="reset">Quên/đổi mật khẩu</button></div>
+<form id="login-form"><h2>Chào mừng trở lại</h2><label>Email hoặc username<input name="identifier" required autocomplete="username"></label><label>Mật khẩu<input name="password" type="password" required autocomplete="current-password"></label><p class="hint">Sai 4 lần khóa 15 phút. Nếu tiếp tục sai 4 lần sau khi mở lại, Admin phải mở khóa.</p><button type="submit">Đăng nhập</button></form>
+<form id="register-form" hidden><h2>Tạo tài khoản Student</h2><label>Email<input name="email" type="email" required autocomplete="email"></label><label>Username<input name="username" required minlength="3" maxlength="32" autocomplete="username" pattern="[A-Za-z0-9_.-]+"></label><label>Mật khẩu<input name="password" type="password" required minlength="7" autocomplete="new-password"></label><p class="hint">Ít nhất 7 ký tự, gồm chữ in hoa, số, ký tự đặc biệt; nên dùng mật khẩu dài hơn.</p><button type="button" data-send-code="register" class="secondary">Gửi mã qua email</button><label>Mã xác minh (6 số)<input name="code" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"></label><p class="hint">Mã có hiệu lực 10 phút. Khi đăng nhập, câu hỏi sẽ được ghi nhận để Admin hỗ trợ vận hành (tối đa 30 ngày).</p><button type="submit">Xác minh và đăng ký</button></form>
+<form id="reset-form" hidden><h2>Đổi mật khẩu bằng email</h2><label>Email<input name="email" type="email" required autocomplete="email"></label><button type="button" data-send-code="reset" class="secondary">Gửi mã qua email</button><label>Mã xác minh<input name="code" required inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6"></label><label>Mật khẩu mới<input name="password" type="password" required minlength="7" autocomplete="new-password"></label><p class="hint">Việc đổi mật khẩu không mở khóa tài khoản. Các phiên cũ sẽ bị hủy.</p><button type="submit">Xác minh và đổi mật khẩu</button></form></div>
+</section>
+<section id="calendar" hidden>
+<div class="page-title"><div><p class="eyebrow">SMART ADMISSION MONITORING</p><h1>Lịch tuyển sinh</h1><p class="muted">Múi giờ Việt Nam · Lịch chính thức có nguồn đối chiếu, lịch cá nhân chỉ bạn quản lý.</p></div><button id="new-event">+ Sự kiện riêng</button></div>
+<div class="calendar-layout"><aside class="panel sidebar">
+<h2>Hiển thị lịch</h2><label>Năm tuyển sinh<select id="year"></select></label><label>Phương thức<select id="method"><option value="all">Tất cả</option><option value="1a">1a — Tuyển thẳng / ưu tiên</option><option value="1b">1b — Quốc tịch nước ngoài</option><option value="2">2 — Kết hợp điểm thi và học bạ</option></select></label>
+<label class="check"><input type="checkbox" id="personal-visible" checked> Hiển thị lịch cá nhân</label>
+<label class="check"><input type="checkbox" id="follow-method" disabled> Nhận thông báo khi lịch phương thức được cập nhật</label>
+<hr><h2>Thông báo trên điện thoại</h2><button id="enable-push">Bật thông báo</button><button id="disable-push" class="secondary">Tắt trên thiết bị này</button><p id="push-status" class="hint"></p><p class="hint">iPhone/iPad: thêm HCMUS Guide vào Màn hình chính, mở ứng dụng từ đó rồi bật thông báo. Cần HTTPS, quyền thông báo và server hoạt động.</p>
+<hr><div class="legend"><span><i class="dot m1a"></i>Phương thức 1a</span><span><i class="dot m1b"></i>Phương thức 1b</span><span><i class="dot m2"></i>Phương thức 2</span><span><i class="dot personal"></i>Cá nhân</span></div>
+<p class="hint">Dữ liệu 2026 là lịch lịch sử. Mốc mới chỉ được công bố sau khi kiểm chứng nguồn chính thức.</p>
+</aside><div class="panel calendar-panel">
+<div class="calendar-header"><h2 id="month-label"></h2><div class="controls"><button id="prev" class="secondary" aria-label="Tháng trước">‹</button><button id="today" class="secondary">Hôm nay</button><button id="next" class="secondary" aria-label="Tháng sau">›</button></div></div>
+<div class="weekdays"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span></div>
+<div id="month-grid" class="month-grid"></div>
+<div class="calendar-bottom"><div><h3 id="selected-day-title">Sự kiện trong ngày</h3><div id="day-events"></div></div><div><h3>Mốc theo phương thức</h3><div id="year-events"></div></div></div></div></div>
+<div class="lower-grid"><div class="panel"><h2>Thông báo của bạn</h2><div id="notices"></div></div><div class="panel"><h2>Theo dõi nguồn tuyển sinh</h2><div id="monitor-status"></div><div id="change-list"></div></div></div>
+</section>
+<section id="dashboard" hidden>
+<div class="page-title"><div><p class="eyebrow">ADMIN ONLY</p><h1>Dashboard</h1><p class="muted">Câu hỏi, hoạt động, khóa tài khoản và kiểm duyệt lịch.</p></div><button id="refresh-admin" class="secondary">Làm mới</button></div>
+<div class="panel"><h2>Nhật ký câu hỏi</h2><form id="filters" class="filters"><label>Từ ngày<input type="date" name="start"></label><label>Đến ngày<input type="date" name="end"></label><label>Thứ tự<select name="sort"><option value="newest">Mới nhất</option><option value="oldest">Cũ nhất</option></select></label><button type="submit">Lọc</button></form><div id="kpis" class="kpis"></div><div class="table-scroll"><table><thead><tr><th>Ngày / giờ</th><th>Username</th><th>Câu hỏi</th><th>Intent / Status</th><th>Latency</th><th>Chi tiết</th></tr></thead><tbody id="questions"></tbody></table></div><div class="controls"><button id="questions-prev" class="secondary">Trang trước</button><span id="question-page"></span><button id="questions-next" class="secondary">Trang sau</button></div></div>
+<div class="panel"><h2>Quản lý khóa tài khoản</h2><div class="table-scroll"><table><thead><tr><th>Username</th><th>Role</th><th>Sai liên tiếp</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="users"></tbody></table></div></div>
+<div class="panel"><h2>Kiểm duyệt lịch chính thức</h2><p class="hint">Đối chiếu thông báo HCMUS trước khi thêm hoặc sửa. Sự kiện đã xác minh sẽ hiển thị cho đúng năm và phương thức; khi đổi mốc, nhắc lịch sẽ tính lại theo ngày mới.</p><form id="official-form" class="filters"><label>Sự kiện<select name="id" id="official-event"><option value="">Thêm mới</option></select></label><label>Năm<input name="year" type="number" min="2025" max="2100" required value="2026"></label><label>Phương thức<select name="method"><option value="1a">1a</option><option value="1b">1b</option><option value="2">2</option></select></label><label>Tiêu đề<input name="title" required maxlength="160"></label><label>Bắt đầu<input name="start" type="datetime-local" required></label><label>Kết thúc<input name="end" type="datetime-local" required></label><label>Nguồn đã theo dõi<select name="source_url" id="official-source" required></select></label><label>Ghi chú / điều kiện<textarea name="note" maxlength="500"></textarea></label><button type="submit">Lưu mốc đã xác minh</button></form><div id="admin-changes"></div></div>
+</section>
+</main>
+<dialog id="event-dialog"><form id="personal-form"><h2 id="personal-heading">Thêm sự kiện riêng</h2><input type="hidden" name="id"><label>Tên sự kiện<input name="title" required maxlength="160"></label><label>Bắt đầu (giờ Việt Nam)<input type="datetime-local" name="start" required></label><label>Kết thúc<input type="datetime-local" name="end" required></label><label>Ghi chú<textarea name="note" maxlength="500"></textarea></label><div class="controls"><button type="submit">Lưu</button><button type="button" class="secondary" data-close="event-dialog">Hủy</button></div></form></dialog>
+<dialog id="detail-dialog"><div id="event-detail"></div><button class="secondary" data-close="detail-dialog">Đóng</button></dialog>
+<dialog id="question-dialog"><h2>Chi tiết câu hỏi</h2><pre id="question-detail"></pre><button class="secondary" data-close="question-dialog">Đóng</button></dialog>
+<footer>HCMUS Guide · Dự án sinh viên, không phải kênh tuyển sinh chính thức của HCMUS.</footer>
+</body></html>
