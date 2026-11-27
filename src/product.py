@@ -141,13 +141,17 @@ def delete_personal(ident:str,request:Request):
 def upsert_official(body:OfficialEvent,request:Request):
     require_admin(request)
     return save_official(body)
-def save_official(body:OfficialEvent):
+def save_official(body:OfficialEvent, candidate_id=None, reviewer=None):
     if not source_allowed(body.source_url):error(400,"Chọn URL chính thức HCMUS.")
     start,end=bounds(body.start,body.end)
     if not body.title.strip():error(400,"Tên sự kiện không được trống.")
     if datetime.fromtimestamp(start,timezone.utc).year not in (body.year-1,body.year,body.year+1):
         error(400,"Năm sự kiện không phù hợp.")
     with db(True) as c:
+        if candidate_id is not None:
+            candidate=c.execute("SELECT d.*,s.url FROM deadline_candidates d JOIN snapshots s ON s.id=d.snapshot_id WHERE d.id=? AND d.state=\'pending\'",(candidate_id,)).fetchone()
+            if not candidate:error(409,"Đề xuất không còn hiệu lực.")
+            if candidate["url"]!=body.source_url:error(400,"Nguồn phải khớp đề xuất.")
         if not c.execute("SELECT 1 FROM monitor_sources WHERE url=?",(body.source_url,)).fetchone():error(400,"Chọn nguồn trong danh sách theo dõi.")
         if body.id:
             old=c.execute("SELECT * FROM events WHERE id=? AND user_id IS NULL",(body.id,)).fetchone()
@@ -173,6 +177,8 @@ def save_official(body:OfficialEvent):
             for r in c.execute("SELECT user_id FROM method_follows WHERE method=?",(body.method,)).fetchall():
                 propose_update(c,r[0],updated)
                 notice(c,r[0],ident,"change",f"new:{ident}:{r[0]}","Mốc tuyển sinh mới — chọn thêm vào kế hoạch: "+body.title)
+        if candidate_id is not None:
+            c.execute("UPDATE deadline_candidates SET state='reviewed',reviewed_at=?,reviewed_by=? WHERE id=?",(time.time(),reviewer,candidate_id))
     return {"id":ident}
 class ReminderBody(BaseModel):
     event_id:StrictStr=Field(max_length=80)
@@ -338,11 +344,16 @@ def get_checklist(request:Request,year:int=2026,method:str="all"):
     with db() as c:rows=c.execute("SELECT year,method,path,tasks,updated_at FROM checklist_progress WHERE user_id=? AND year=? AND (?='all' OR method=?) ORDER BY updated_at DESC",(uid,year,method,method)).fetchall()
     return {"items":[{**dict(r),"tasks":json.loads(r["tasks"])} for r in rows]}
 @router.get("/admin/monitor/candidates")
-def candidates(request:Request):
+def candidates(request:Request,history:bool=False):
     require_admin(request)
     with db() as c:rows=c.execute("""SELECT d.*,s.url,s.fetched_at FROM deadline_candidates d JOIN snapshots s ON s.id=d.snapshot_id
-      WHERE d.state='pending' ORDER BY d.id DESC LIMIT 100""").fetchall()
+      WHERE d.state='pending' OR (? AND d.state IN ('reviewed','rejected','superseded')) ORDER BY CASE WHEN d.state='pending' THEN 0 ELSE 1 END,d.id DESC LIMIT 200""",(int(history),)).fetchall()
     return {"items":[dict(r) for r in rows]}
+@router.post("/admin/monitor/candidates/{ident}/publish")
+def publish_candidate(ident:int,body:OfficialEvent,request:Request):
+    uid=require_admin(request)["id"]
+    return save_official(body,ident,uid)
+
 class CandidateDecision(BaseModel):
     decision:Literal["reviewed","rejected"]
 @router.post("/admin/monitor/candidates/{ident}/decision")

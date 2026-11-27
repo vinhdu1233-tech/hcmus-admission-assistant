@@ -27,6 +27,16 @@ CREATE TABLE IF NOT EXISTS sessions (
  expires REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS session_users ON sessions(user_id);
+CREATE TABLE IF NOT EXISTS chat_threads (
+ id TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ title TEXT NOT NULL DEFAULT 'Cuộc trò chuyện mới', created_at REAL NOT NULL, updated_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS chat_thread_owner ON chat_threads(user_id,updated_at);
+CREATE TABLE IF NOT EXISTS chat_turns (
+ id INTEGER PRIMARY KEY, thread_id TEXT NOT NULL REFERENCES chat_threads(id) ON DELETE CASCADE,
+ question TEXT NOT NULL, response TEXT NOT NULL, created_at REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS chat_turn_thread ON chat_turns(thread_id,id);
 CREATE TABLE IF NOT EXISTS question_logs (
  id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
  question TEXT NOT NULL, intent TEXT NOT NULL, status TEXT NOT NULL,

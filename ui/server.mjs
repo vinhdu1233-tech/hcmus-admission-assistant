@@ -110,7 +110,7 @@ async function handleConversationReset(req,res) {
   try {
     const upstream=await fetch(new URL('/chat',API_ORIGIN),{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json',Cookie:String(req.headers.cookie||'')},
       body:JSON.stringify({message:'bắt đầu lại',conversation_id:session.id}),
       signal:AbortSignal.timeout(10000),
     });

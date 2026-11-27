@@ -3,7 +3,10 @@ Major exploration uses verified retrieval and optional AI explanations.
 """
 from __future__ import annotations
 from typing import Annotated, Literal
-import time
+import time, os
+from src.product_auth import require_user, error
+from src.product_db import db
+from src.product_chat import owned_thread, new_thread, store_turn
 from src.product import router as product_router, record_question
 from uuid import UUID
 from fastapi import FastAPI, Request
@@ -20,6 +23,8 @@ class ChatRequest(BaseModel):
     message: StrictStr
     admission_year: Annotated[StrictInt,Field(ge=2000,le=2100)] | None = None
     conversation_id: UUID | None = None
+    thread_id: UUID | None = None
+    account_id: StrictInt | None = None
 class Source(BaseModel):
     title:str
     url:str
@@ -54,12 +59,22 @@ def chat(request:ChatRequest, http_request:Request):
         return JSONResponse(status_code=400,content=public_error('INVALID_INPUT',
             'Câu hỏi sau khi bỏ khoảng trắng phải có từ 1 đến 1000 ký tự.',
             'Vui lòng nhập một câu hỏi hợp lệ.'))
+    uid=None;thread=None
+    if os.getenv("REQUIRE_ACCOUNT_CHAT","0")=="1" or request.thread_id is not None or request.account_id is not None:
+        user=require_user(http_request);uid=user["id"]
+        if request.account_id is not None and request.account_id!=uid:error(409,"Phiên tài khoản đã thay đổi.")
+        with db(True) as c:
+            if request.thread_id:
+                thread=str(request.thread_id);owned_thread(c,uid,thread)
+            else:
+                thread=new_thread(c,uid)
     try:
         ensure_database()
         result=ChatResponse(**conversation_manager.answer(
             msg, request.admission_year,
-            str(request.conversation_id) if request.conversation_id is not None else None
+            thread or (str(request.conversation_id) if request.conversation_id is not None else None)
         ))
+        if thread:store_turn(uid,thread,msg,result.model_dump())
         record_question(http_request,msg,result,(time.perf_counter()-started)*1000)
         return result
     except Exception:

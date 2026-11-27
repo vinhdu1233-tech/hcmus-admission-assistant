@@ -4,6 +4,7 @@ from urllib.request import urlopen
 def main():
     from scripts.local_bootstrap import configure
     configure()
+    os.environ['REQUIRE_ACCOUNT_CHAT']='1'
     procs=[]
     def stop(*_):
         for p in procs:p.terminate()
