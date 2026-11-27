@@ -173,7 +173,7 @@ def follow(body:Follow,request:Request):
 def push_endpoint_allowed(url):
     try:
         p=urlsplit(url);host=p.hostname or ""
-        allowed=("fcm.googleapis.com","updates.push.services.mozilla.com","web.push.apple.com","push.services.mozilla.com","notify.windows.com")
+        allowed=("fcm.googleapis.com","updates.push.services.mozilla.com","push.apple.com","push.services.mozilla.com","notify.windows.com")
         return p.scheme=="https" and not p.username and not p.password and p.port in (None,443) and any(host==h or host.endswith("."+h) for h in allowed)
     except ValueError:return False
 class PushSub(BaseModel):

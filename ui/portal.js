@@ -61,7 +61,7 @@ document.querySelectorAll('[data-send-code]').forEach(b=>b.addEventListener('cli
   b.disabled=true;try{const d=await api('/auth/'+b.dataset.sendCode+'/code',{method:'POST',body:{email:email.value}});flash(d.message||'Đã gửi mã.');setTimeout(()=>b.disabled=false,60000);}
   catch(e){b.disabled=false;throw e;}
 })));
-$('logout').onclick=()=>safe(async()=>{const reg=await navigator.serviceWorker?.getRegistration('/'),sub=await reg?.pushManager?.getSubscription();if(sub){await api('/push/unsubscribe',{method:'POST',body:{endpoint:sub.endpoint}});await sub.unsubscribe();}await api('/auth/logout',{method:'POST',body:{}});await refreshUser();showAuthTab('login');flash('Đã đăng xuất. Lịch riêng không còn hiển thị.');});
+$('logout').onclick=()=>safe(async()=>{let sub=null;try{const reg=await navigator.serviceWorker?.getRegistration('/');sub=await reg?.pushManager?.getSubscription();}catch{}await api('/auth/logout',{method:'POST',body:sub?{endpoint:sub.endpoint}:{}});if(sub){try{await sub.unsubscribe();}catch{}}await refreshUser();showAuthTab('login');flash('Đã đăng xuất. Lịch riêng không còn hiển thị.');});
 $('change-password').onclick=()=>{ $('auth-forms').hidden=false;showAuthTab('reset');fill($('reset-form'),'email',user.email);};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 const currentYear=Number(selected.slice(0,4));

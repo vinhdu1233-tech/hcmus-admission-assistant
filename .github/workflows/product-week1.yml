@@ -52,6 +52,7 @@ jobs:
           python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 > /tmp/week1-api.log 2>&1 &
           PORT=5501 CHAT_MODE=api API_ORIGIN=http://127.0.0.1:8000 node ui/server.mjs > /tmp/week1-node.log 2>&1 &
           python -m scripts.product_browser_check
+          python scripts/f1_slo_regression.py
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@v4

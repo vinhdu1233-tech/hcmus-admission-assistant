@@ -190,10 +190,16 @@ def login(body:Login,response:Response):
     return {"user":public}
 @router.get("/auth/me")
 def me(request:Request):return {"user":user_for(request)}
+class LogoutBody(BaseModel):
+    endpoint:StrictStr|None=Field(default=None,max_length=2048)
 @router.post("/auth/logout")
-def logout(request:Request,response:Response):
+def logout(request:Request,response:Response,body:LogoutBody|None=None):
     token=request.cookies.get(COOKIE,"")
     if token:
-        with db(True) as c:c.execute("DELETE FROM sessions WHERE token_hash=?",(token_hash(token),))
+        with db(True) as c:
+            session=c.execute("SELECT user_id FROM sessions WHERE token_hash=?",(token_hash(token),)).fetchone()
+            if session and body and body.endpoint:
+                c.execute("DELETE FROM push_subscriptions WHERE user_id=? AND endpoint=?",(session["user_id"],body.endpoint))
+            c.execute("DELETE FROM sessions WHERE token_hash=?",(token_hash(token),))
     response.delete_cookie(COOKIE,path="/",httponly=True,samesite="strict",secure=cookie_secure())
     return {"ok":True}

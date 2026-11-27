@@ -64,8 +64,23 @@ def main():
         expect(page.locator("#event-dialog")).to_be_hidden()
         events=student.request.get(BASE+"/api/product/calendar?year=2026&method=all").json()["events"]
         e=next(x for x in events if x["title"]=="Personal browser reminder")
-        r=student.request.post(BASE+"/api/product/calendar/reminders",data={"event_id":e["id"],"before_start":[7,4],"before_end":[7,4]})
-        assert r.ok,r.text()
+        # Navigate to the personal event month and exercise the actual reminder UI.
+        target=future.date().isoformat()
+        for _ in range(24):
+            # Calendar starts in June (the selected historical official method).
+            label=page.locator("#month-label").inner_text()
+            m=re.search(r"Tháng (\d+), (\d+)",label)
+            if (int(m.group(2)),int(m.group(1)))==(future.year,future.month):break
+            if (int(m.group(2)),int(m.group(1)))<(future.year,future.month):page.locator("#next").click()
+            else:page.locator("#prev").click()
+        page.locator(".event-chip").filter(has_text="Personal browser reminder").first.click()
+        detail=page.locator("#event-detail")
+        for edge in ("start","end"):
+            for offset in ("7","4"):detail.locator(f'input[name="{edge}"][value="{offset}"]').check()
+        detail.get_by_role("button",name="Lưu nhắc lịch").click()
+        expect(page.locator("#detail-dialog")).to_be_hidden()
+        actual=student.request.get(BASE+"/api/product/calendar?year=2026&method=all").json()["reminders"]
+        assert {(x["edge"],x["days_before"]) for x in actual if x["event_id"]==e["id"]}=={("start",7),("start",4),("end",7),("end",4)}
         result.append("personal_event_and_start_end_reminders")
         assert student.request.get(BASE+"/api/product/admin/questions").status==403
         result.append("student_admin_api_denied")
