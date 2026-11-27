@@ -125,6 +125,28 @@ def main():
         ap.goto(BASE+"/",wait_until="domcontentloaded")
         expect(ap.locator(".desktop-nav")).to_contain_text("Dashboard")
         result.append("role_based_main_navigation")
+        # Exercise three actual proposal buttons in student browser.
+        page.goto(BASE+"/portal.html#calendar",wait_until="domcontentloaded")
+        page.locator("#year").select_option("2026");page.locator("#method").select_option("1a")
+        page.locator("#follow-method").check()
+        expect(page.locator("#message")).to_contain_text("theo dõi")
+        start=(future+timedelta(days=5)).isoformat();end=(future+timedelta(days=7)).isoformat()
+        payload={"title":"TEST consent browser","year":future.year,"method":"1a","start":start,"end":end,"source_url":"https://tuyensinh.hcmus.edu.vn/2026-thong-bao-mo-cong-dang-ky-phuong-thuc-1a/"}
+        r=admin.request.post(BASE+"/api/product/admin/calendar",data=payload);assert r.ok,r.text()
+        payload["id"]=r.json()["id"]
+        page.reload(wait_until="domcontentloaded")
+        proposal=page.locator(".proposal").filter(has_text="TEST consent browser").first
+        expect(proposal).to_contain_text("Chờ xác nhận")
+        proposal.locator('[data-decision=deferred]').click();expect(proposal).to_contain_text("Để sau")
+        proposal.locator('[data-decision=accepted]').click();expect(proposal).to_contain_text("Đã đồng ý")
+        payload["end"]=(future+timedelta(days=9)).isoformat()
+        r=admin.request.post(BASE+"/api/product/admin/calendar",data=payload);assert r.ok,r.text()
+        page.reload(wait_until="domcontentloaded");proposal=page.locator(".proposal").filter(has_text="TEST consent browser").first
+        proposal.locator('[data-decision=rejected]').click()
+        expect(page.locator(".proposal").filter(has_text="TEST consent browser").filter(has_text="Đã từ chối")).to_be_visible()
+        expect(page.locator("#personal-plans")).to_contain_text("Kế hoạch cũ")
+        page.screenshot(path=str(OUT/"calendar-approval.png"),full_page=True)
+        result.append("calendar_proposal_defer_accept_reject")
         student.close();admin.close();browser.close()
     (OUT/"results.json").write_text(json.dumps({"passed":result,"total":len(result)},indent=2))
     print("BROWSER_PRODUCT_RESULTS",json.dumps(result))
