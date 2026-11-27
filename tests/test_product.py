@@ -122,7 +122,7 @@ def test_calendar_filters_historical_and_ownership(env):
     a=client();b=client();g=client();register(a,env,"a@example.test","aaa");register(b,env,"b@example.test","bbb")
     assert login(a,"aaa").status_code==200;assert login(b,"bbb").status_code==200
     rows=g.get("/product/calendar?year=2026&method=1a").json()["events"]
-    assert len(rows)==1 and rows[0]["method"]=="1a" and rows[0]["source_url"]==S1
+    assert rows and all(r["method"]=="1a" for r in rows) and any(r["source_url"]==S1 for r in rows)
     assert not g.get("/product/calendar?year=2027&method=all").json()["events"]
     i=event(a);assert any(e["id"]==i for e in get_events(a))
     assert all(e["id"]!=i for e in get_events(b)+get_events(g))

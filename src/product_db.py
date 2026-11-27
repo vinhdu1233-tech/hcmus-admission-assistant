@@ -83,6 +83,25 @@ CREATE TABLE IF NOT EXISTS changes (
  summary TEXT NOT NULL, detected_at REAL NOT NULL, reviewed_at REAL,
  review_note TEXT NOT NULL DEFAULT '', UNIQUE(previous_id,current_id)
 );
+
+CREATE TABLE IF NOT EXISTS deadline_candidates (
+ id INTEGER PRIMARY KEY, snapshot_id INTEGER NOT NULL REFERENCES snapshots(id),
+ year INTEGER NOT NULL, method TEXT NOT NULL, title TEXT NOT NULL,
+ starts REAL, ends REAL NOT NULL, evidence TEXT NOT NULL, precision_note TEXT NOT NULL,
+ state TEXT NOT NULL DEFAULT 'pending', reviewed_at REAL, reviewed_by INTEGER REFERENCES users(id),
+ UNIQUE(snapshot_id,method,title,ends,evidence)
+);
+CREATE TABLE IF NOT EXISTS notice_reads (
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ notice_id INTEGER NOT NULL REFERENCES notices(id) ON DELETE CASCADE,
+ read_at REAL NOT NULL, PRIMARY KEY(user_id,notice_id)
+);
+CREATE TABLE IF NOT EXISTS checklist_progress (
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ year INTEGER NOT NULL, method TEXT NOT NULL, path TEXT NOT NULL,
+ tasks TEXT NOT NULL, updated_at REAL NOT NULL,
+ PRIMARY KEY(user_id,year,method,path)
+);
 """
 _guard=threading.Lock()
 _initialized=set()

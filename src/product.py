@@ -112,6 +112,8 @@ def delete_personal(ident:str,request:Request):
 @router.post("/admin/calendar")
 def upsert_official(body:OfficialEvent,request:Request):
     require_admin(request)
+    return save_official(body)
+def save_official(body:OfficialEvent):
     if not source_allowed(body.source_url):error(400,"Chọn URL chính thức HCMUS.")
     start,end=bounds(body.start,body.end)
     if not body.title.strip():error(400,"Tên sự kiện không được trống.")
@@ -206,8 +208,64 @@ def unsubscribe(body:Endpoint,request:Request):
 @router.get("/calendar/notices")
 def notices(request:Request):
     user=require_user(request)
-    with db() as c:rows=c.execute("SELECT id,kind,title,created_at FROM notices WHERE user_id=? ORDER BY id DESC LIMIT 50",(user["id"],)).fetchall()
+    with db() as c:
+        rows=c.execute("""SELECT n.id,n.event_id,n.kind,n.title,n.created_at,r.read_at FROM notices n
+        LEFT JOIN notice_reads r ON r.notice_id=n.id AND r.user_id=n.user_id WHERE n.user_id=? ORDER BY n.id DESC LIMIT 50""",(user["id"],)).fetchall()
+        unread=c.execute("""SELECT COUNT(*) FROM notices n WHERE n.user_id=? AND NOT EXISTS
+        (SELECT 1 FROM notice_reads r WHERE r.user_id=n.user_id AND r.notice_id=n.id)""",(user["id"],)).fetchone()[0]
+    return {"items":[dict(r) for r in rows],"unread":unread}
+@router.post("/calendar/notices/read-all")
+def read_all(request:Request):
+    uid=require_user(request)["id"]
+    with db(True) as c:c.execute("INSERT OR IGNORE INTO notice_reads SELECT user_id,id,? FROM notices WHERE user_id=?",(time.time(),uid))
+    return {"ok":True}
+@router.post("/calendar/notices/{ident}/read")
+def read_notice(ident:int,request:Request):
+    uid=require_user(request)["id"]
+    with db(True) as c:
+        if not c.execute("SELECT 1 FROM notices WHERE id=? AND user_id=?",(ident,uid)).fetchone():error(404,"Không tìm thấy thông báo.")
+        c.execute("INSERT OR IGNORE INTO notice_reads VALUES (?,?,?)",(uid,ident,time.time()))
+    return {"ok":True}
+@router.get("/calendar/event/{ident}")
+def calendar_event(ident:str,request:Request):
+    user=user_for(request)
+    with db() as c:return dict(event_access(c,ident,user["id"] if user else -1))
+class ChecklistTask(BaseModel):
+    id:StrictStr=Field(min_length=1,max_length=100)
+    title:StrictStr=Field(min_length=1,max_length=200)
+    done:bool
+class ChecklistBody(BaseModel):
+    year:StrictInt=Field(ge=2025,le=2100)
+    method:StrictStr=Field(pattern=r"^(1a|1b|1c|1d|2|3)$")
+    path:StrictStr=Field(default="",max_length=32)
+    tasks:list[ChecklistTask]=Field(max_length=80)
+@router.put("/calendar/checklist")
+def save_checklist(body:ChecklistBody,request:Request):
+    uid=require_user(request)["id"]
+    if len({t.id for t in body.tasks})!=len(body.tasks):error(400,"Trùng công việc.")
+    with db(True) as c:c.execute("""INSERT INTO checklist_progress VALUES (?,?,?,?,?,?)
+      ON CONFLICT(user_id,year,method,path) DO UPDATE SET tasks=excluded.tasks,updated_at=excluded.updated_at""",
+      (uid,body.year,body.method,body.path,json.dumps([t.model_dump() for t in body.tasks],ensure_ascii=False),time.time()))
+    return {"ok":True}
+@router.get("/calendar/checklist")
+def get_checklist(request:Request,year:int=2026,method:str="all"):
+    uid=require_user(request)["id"]
+    with db() as c:rows=c.execute("SELECT year,method,path,tasks,updated_at FROM checklist_progress WHERE user_id=? AND year=? AND (?='all' OR method=?) ORDER BY updated_at DESC",(uid,year,method,method)).fetchall()
+    return {"items":[{**dict(r),"tasks":json.loads(r["tasks"])} for r in rows]}
+@router.get("/admin/monitor/candidates")
+def candidates(request:Request):
+    require_admin(request)
+    with db() as c:rows=c.execute("""SELECT d.*,s.url,s.fetched_at FROM deadline_candidates d JOIN snapshots s ON s.id=d.snapshot_id
+      WHERE d.state='pending' ORDER BY d.id DESC LIMIT 100""").fetchall()
     return {"items":[dict(r) for r in rows]}
+class CandidateDecision(BaseModel):
+    decision:Literal["reviewed","rejected"]
+@router.post("/admin/monitor/candidates/{ident}/decision")
+def candidate_decision(ident:int,body:CandidateDecision,request:Request):
+    uid=require_admin(request)["id"]
+    with db(True) as c:
+        if not c.execute("UPDATE deadline_candidates SET state=?,reviewed_at=?,reviewed_by=? WHERE id=? AND state='pending'",(body.decision,time.time(),uid,ident)).rowcount:error(409,"Đề xuất đã thay đổi hoặc không còn hiệu lực.")
+    return {"ok":True}
 def source_allowed(url):
     try:
         p=urlsplit(url)

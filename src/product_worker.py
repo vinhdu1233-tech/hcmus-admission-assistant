@@ -5,6 +5,7 @@ import httpx
 from bs4 import BeautifulSoup
 from src.product_db import db
 from src.product_seed import SOURCES
+from src.deadline_extraction import save_candidates
 from src.product import notice,push_endpoint_allowed,push_config,source_allowed
 log=logging.getLogger("hcmus.worker")
 def normalized_page(raw):
@@ -12,7 +13,7 @@ def normalized_page(raw):
     root=soup.select_one(".entry-content") or soup.select_one("article") or soup.select_one("main")
     if root is None:raise ValueError("No supported content container")
     for element in root.select("script,style,nav,footer,form,aside"):element.decompose()
-    text=" ".join(root.stripped_strings)
+    text="\n".join(" ".join(x.stripped_strings) for x in root.select("p,li,h1,h2,h3,h4") if x.get_text(strip=True)) or " ".join(root.stripped_strings)
     # On a listing, include official links to detect newly posted notices too.
     links=sorted(set(a.get("href","") for a in root.select("a[href]") if a.get("href","").startswith("https://tuyensinh.hcmus.edu.vn/")))
     text+="\n"+"\n".join(links)
@@ -38,6 +39,7 @@ def save_snapshot(url,content,now=None):
         last=c.execute("SELECT id,digest,content FROM snapshots WHERE url=? ORDER BY id DESC LIMIT 1",(url,)).fetchone()
         if not last or last["digest"]!=digest:
             ident=c.execute("INSERT INTO snapshots(url,digest,content,fetched_at) VALUES (?,?,?,?)",(url,digest,content,now)).lastrowid
+            save_candidates(c,ident,url,content)
             if last:
                 delta=list(difflib.unified_diff(last["content"].split(),content.split(),n=2))
                 summary="\n".join(delta[:120])[:1200] or "Source content changed."
@@ -55,13 +57,19 @@ def poll_sources():
 def queue_reminders(now=None):
     now=time.time() if now is None else now
     with db(True) as c:
-        rows=c.execute("""SELECT r.*,e.title,e.starts,e.ends,e.revision FROM reminders r JOIN events e ON e.id=r.event_id
+        rows=c.execute("""SELECT r.*,e.title,e.starts,e.ends,e.revision,e.year,e.method FROM reminders r JOIN events e ON e.id=r.event_id
           WHERE (CASE r.edge WHEN 'start' THEN e.starts ELSE e.ends END)-r.days_before*86400 <= ?
           AND (CASE r.edge WHEN 'start' THEN e.starts ELSE e.ends END)-r.days_before*86400 >= r.created_at
           AND (CASE r.edge WHEN 'start' THEN e.starts ELSE e.ends END)-r.days_before*86400 >= ?""",(now,now-86400)).fetchall()
         for r in rows:
             edge="bắt đầu" if r["edge"]=="start" else "kết thúc"
             title=f"{r['title']} — "+(f"còn {r['days_before']} ngày đến mốc {edge}" if r["days_before"] else f"đến mốc {edge}")
+            if r["year"] and r["method"]:
+                plan=c.execute("SELECT tasks FROM checklist_progress WHERE user_id=? AND year=? AND method=? ORDER BY updated_at DESC LIMIT 1",(r["user_id"],r["year"],r["method"])).fetchone()
+                if plan:
+                    tasks=json.loads(plan["tasks"])
+                    remaining=sum(not x["done"] for x in tasks)
+                    if remaining:title+=f" · Checklist còn {remaining} việc (kế hoạch đã lưu)"
             key=f"reminder:{r['id']}:{r['revision']}:{r['user_id']}"
             # Never regenerate an already queued notice/delivery.
             if not c.execute("SELECT 1 FROM notices WHERE dedupe_key=?",(key,)).fetchone():
@@ -70,7 +78,7 @@ def send_pending():
     if not push_config()["enabled"]:return
     from pywebpush import webpush,WebPushException
     with db() as c:
-        rows=c.execute("""SELECT d.*,n.title,n.created_at,s.subscription,s.endpoint FROM deliveries d
+        rows=c.execute("""SELECT d.*,n.title,n.created_at,n.event_id,s.subscription,s.endpoint FROM deliveries d
           JOIN notices n ON n.id=d.notice_id JOIN push_subscriptions s ON s.id=d.subscription_id
           WHERE d.state='pending' AND d.next_attempt<=? AND s.enabled=1 AND n.user_id=s.user_id LIMIT 100""",(time.time(),)).fetchall()
     for row in rows:
@@ -82,7 +90,7 @@ def send_pending():
             if time.time()-row["created_at"]>86400 or not push_endpoint_allowed(row["endpoint"]):
                 state="expired"
             else:
-                webpush(subscription_info=json.loads(row["subscription"]),data=json.dumps({"title":"HCMUS Guide","body":row["title"],"url":"/portal.html#calendar"},ensure_ascii=False),
+                webpush(subscription_info=json.loads(row["subscription"]),data=json.dumps({"title":"HCMUS Guide","body":row["title"],"url":"/portal.html?event="+__import__("urllib.parse",fromlist=["quote"]).quote(row["event_id"],safe="")+"#calendar"},ensure_ascii=False),
                   vapid_private_key=os.environ["VAPID_PRIVATE_KEY"],vapid_claims={"sub":os.environ["VAPID_SUBJECT"]},ttl=3600,timeout=10)
                 state="sent";sent=time.time()
         except Exception as e:
