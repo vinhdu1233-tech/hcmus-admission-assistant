@@ -42,7 +42,7 @@ jobs:
           node --check ui/portal.js
           node --check ui/product-nav.js
           node --check ui/product-sw.js
-          node --test tests/test_conversation_proxy.mjs tests/test_planner_methods.mjs tests/test_web_product.mjs
+          node --test tests/test_conversation_proxy.mjs tests/test_planner_methods.mjs tests/test_web_product.mjs tests/test_calendar_grouping.mjs
       - name: Browser system tests
         env:
           HCMUS_DB_PATH: /tmp/week1-admissions.sqlite3

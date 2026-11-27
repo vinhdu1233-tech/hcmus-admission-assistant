@@ -1,3 +1,4 @@
+import {groupCalendarEvents} from './calendar-grouping.mjs';
 const $=id=>document.getElementById(id);
 const apiBase='/api/product';
 let pushConfig=null,pushRegistration=null;
@@ -68,10 +69,10 @@ const currentYear=Number(selected.slice(0,4));
 for(let y=2025;y<=Math.max(currentYear+2,2028);y++){$('year').append(new Option(String(y),String(y)));}
 $('year').value=String(currentYear);
 function keyDate(d){return d.toISOString().slice(0,10);}
-function eventClass(e){return e.user_id!==null?'personal':'m'+e.method;}
-function visibleEvents(){const q=$('calendar-search').value.trim().toLocaleLowerCase('vi');return calendarData.events.filter(e=>($('personal-visible').checked||e.user_id===null)&&(!q||(e.title+' '+e.note).toLocaleLowerCase('vi').includes(q)));}
+function eventClass(e){return e.variants?'shared':e.user_id!==null?'personal':'m'+e.method;}
+function visibleEvents(){const q=$('calendar-search').value.trim().toLocaleLowerCase('vi');return groupCalendarEvents(calendarData.events.filter(e=>($('personal-visible').checked||e.user_id===null)&&(!q||(e.title+' '+e.note).toLocaleLowerCase('vi').includes(q))));}
 function onDay(e,k){return dateKey(e.starts)<=k&&dateKey(e.ends)>=k;}
-function eventRow(e){const row=button(e.title,()=>showEvent(e),'event-row');row.append(el('small',timeText(e.starts)+(e.ends!==e.starts?' → '+timeText(e.ends):'')));return row;}
+function eventRow(e){const row=button(e.title,()=>showEvent(e),'event-row');row.append(el('small',timeText(e.starts)+(e.ends!==e.starts?' → '+timeText(e.ends):'')+(e.variants?' · Phương thức '+e.variants.map(v=>v.method).join(', '):'')));return row;}
 function renderCalendar(){
   const view=$('calendar-view').value;
   $('month-grid').hidden=view!=='month';document.querySelector('.weekdays').hidden=view!=='month';$('alternate-view').hidden=view==='month';
@@ -150,6 +151,12 @@ $('personal-form').onsubmit=event=>{event.preventDefault();safe(async()=>{
   $('event-dialog').close();flash('Đã lưu sự kiện.');await loadCalendar();
 });};
 function showEvent(e){
+  if(e.variants){
+    const box=$('event-detail');box.replaceChildren();
+    box.append(el('h2',e.title),el('p',timeText(e.starts)+' → '+timeText(e.ends)),el('p',e.note||'','hint'),sourceLink(e.source_url),el('p','Mốc chung cho các phương thức '+e.variants.map(v=>v.method).join(', ')+'. Chọn phương thức để xem hoặc đặt lời nhắc riêng.'));
+    for(const v of e.variants)box.append(button('Phương thức '+v.method,()=>showEvent(v)));
+    if(!$('detail-dialog').open)$('detail-dialog').showModal();return;
+  }
   const pinned=e.personal_plan||calendarData.plans?.find(p=>p.event_id===e.id);
   const schedule=pinned||e;
   const box=$('event-detail');box.replaceChildren();box.append(el('h2',e.title),el('p',timeText(e.starts)+' → '+timeText(e.ends)),el('p',e.note||'', 'hint'));
@@ -180,7 +187,7 @@ function showEvent(e){
       $('detail-dialog').close();flash('Đã lưu nhắc lịch. Bật thông báo trên thiết bị để nhận Web Push.');await loadCalendar();
     });};box.append(form);
   }else box.append(button('Đăng nhập để đặt nhắc lịch',()=>{$('detail-dialog').close();requireLogin();}));
-  $('detail-dialog').showModal();
+  if(!$('detail-dialog').open)$('detail-dialog').showModal();
 }
 function decodeVapid(s){const b64=s.replace(/-/g,'+').replace(/_/g,'/');const padded=b64+'='.repeat((4-b64.length%4)%4);return Uint8Array.from(atob(padded),c=>c.charCodeAt(0));}
 async function refreshPush(){
