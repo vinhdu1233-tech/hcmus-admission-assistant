@@ -3,6 +3,8 @@ Major exploration uses verified retrieval and optional AI explanations.
 """
 from __future__ import annotations
 from typing import Annotated, Literal
+import time
+from src.product import router as product_router, record_question
 from uuid import UUID
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -11,7 +13,8 @@ from pydantic import BaseModel, Field, StrictInt, StrictStr
 from src.assistant.conversation import conversation_manager
 from src.database.db import ensure_database
 
-app=FastAPI(title='HCMUS Admission & Study Assistant',version='0.2.0')
+app=FastAPI(title='HCMUS Admission & Study Assistant',version='0.3.0')
+app.include_router(product_router)
 
 class ChatRequest(BaseModel):
     message: StrictStr
@@ -42,7 +45,8 @@ def health():
     return {'status':'ok'}
 
 @app.post('/chat',response_model=ChatResponse)
-def chat(request:ChatRequest):
+def chat(request:ChatRequest, http_request:Request):
+    started=time.perf_counter()
     msg=request.message.strip()
     if not msg or len(msg)>1000:
         return JSONResponse(status_code=400,content=public_error('INVALID_INPUT',
@@ -50,10 +54,12 @@ def chat(request:ChatRequest):
             'Vui lòng nhập một câu hỏi hợp lệ.'))
     try:
         ensure_database()
-        return ChatResponse(**conversation_manager.answer(
+        result=ChatResponse(**conversation_manager.answer(
             msg, request.admission_year,
             str(request.conversation_id) if request.conversation_id is not None else None
         ))
+        record_question(http_request,msg,result,(time.perf_counter()-started)*1000)
+        return result
     except Exception:
         # Avoid exposing internal details and secrets to end users.
         return JSONResponse(status_code=503,content=public_error('SERVICE_UNAVAILABLE',
