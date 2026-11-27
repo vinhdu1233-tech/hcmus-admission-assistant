@@ -257,7 +257,7 @@ let plannerState={done:[],extra:[]};
 function selectedMethod(){return (ADMISSION_METHODS[planner.year.value]||[]).find(m=>m.id===planner.method.value)||null;}
 function selectedPath(){return selectedMethod()?.paths?.find(p=>p.id===planner.path.value)||null;}
 function plannerKey(){return planner.year.value+':'+planner.method.value+':'+planner.path.value;}
-let planOwner=null,planName='',planReady=false,planVersion=0,syncChain=Promise.resolve(),planFailed=false,pendingSaves=0;
+let planOwner=null,planName='',accountKnown=false,planReady=false,planVersion=0,syncChain=Promise.resolve(),planFailed=false,pendingSaves=0;
 async function accountNow(){const r=await fetch('/api/product/auth/me',{cache:'no-store'});if(!r.ok)throw Error('Không kết nối được tài khoản');return (await r.json()).user;}
 function savePlanner(){
  if(!planReady||!planOwner||!selectedMethod())return;
@@ -274,7 +274,7 @@ async function loadPlanner(){
  const v=++planVersion,key=plannerKey();planReady=false;plannerState={done:[],extra:[]};renderPlanner();planner.saved.textContent='ĐANG TẢI…';
  try{
   await syncChain;const u=await accountNow();if(v!==planVersion)return;
-  planOwner=u?.id||null;planName=u?.username||'';
+  planOwner=u?.id||null;planName=u?.username||'';accountKnown=true;
   document.getElementById('planner-owner').textContent=u?'Checklist của '+u.username:'Bạn chưa đăng nhập';
   if(!u){planner.saved.textContent='ĐĂNG NHẬP ĐỂ LƯU CHECKLIST';return;}
   if(!selectedMethod()){planner.saved.textContent='CHƯA CÓ PHƯƠNG THỨC';return;}
@@ -412,14 +412,14 @@ updateMethods('2');
  }catch{}
 })();
 function clearPrivateView(){
- planVersion++;planReady=false;plannerState={done:[],extra:[]};planOwner=null;planName='';renderPlanner();
+ planVersion++;planReady=false;plannerState={done:[],extra:[]};planOwner=null;planName='';accountKnown=false;renderPlanner();
  els.messages.replaceChildren();historySelect.replaceChildren();chatOwner=null;activeThread=null;closeAssistant();
  document.getElementById('planner-owner').textContent='Đang xác minh tài khoản…';
 }
 window.addEventListener('storage',e=>{if(e.key==='hcmus:auth-change'){clearPrivateView();location.reload();}});
 async function verifyVisibleAccount(){
  if(document.hidden)return;
- try{const u=await accountNow();if((chatOwner&&chatOwner!==u?.id)||(planOwner!==null&&planOwner!==u?.id)||(!planOwner&&u)){clearPrivateView();location.reload();}}
+ try{const u=await accountNow();if((chatOwner&&chatOwner!==u?.id)||(accountKnown&&(planOwner||null)!==(u?.id||null))){clearPrivateView();location.reload();}}
  catch{}
 }
 document.addEventListener('visibilitychange',verifyVisibleAccount);window.addEventListener('focus',verifyVisibleAccount);

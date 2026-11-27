@@ -53,3 +53,6 @@ The product database is /data/product.sqlite3 inside the guide container, separa
     docker compose -f compose.product.yml -f compose.ollama-native.yml exec guide rm -f /tmp/product-inspect.sqlite3
 
 Open product-inspect.sqlite3 in DBeaver's SQLite connection. This is a point-in-time copy, not live, and contains private account data: do not commit or share it. Passwords are bcrypt hashes; OTPs and session tokens are hashed, not plaintext. Use a disposable copy for SQL experiments. No need to expose database ports. Re-export to refresh.
+
+## Workspace R2 troubleshooting
+After pulling, run docker compose -f compose.product.yml -f compose.ollama-native.yml up -d --build --force-recreate --remove-orphans. Verify http://localhost:8080/api/config shows release workspace-r2 and version 1.1.0. If not, verify branch, project directory, container and port before testing. Use the same hostname localhost (not alternating 127.0.0.1) for auth cookies. New or changed official milestones appear in every Student's in-app inbox; targeted followers / existing plans receive personal proposals and eligible Web Push. Unchanged edits and rejected proposals do not create notices. This is prospective (no retroactive announcements). The Dashboard sidebar separates six workspaces. Checklist GET now verifies account_id, and same-origin account changes clear/reload other tabs.

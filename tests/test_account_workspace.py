@@ -51,3 +51,25 @@ def test_candidate_atomic_publish_and_history(env):
     assert a.get("/product/admin/monitor/candidates").json()["items"]==[]
     assert a.get("/product/admin/monitor/candidates?history=true").json()["items"][0]["state"]=="reviewed"
     assert any(x["id"]==r.json()["id"] for x in s.get("/product/calendar?year=2026").json()["events"])
+
+
+def test_publication_inbox_and_targeted_proposals(env):
+    a=client();s=client();other=client();admin(a);register(s,env);register(other,env,"other@example.test","other")
+    login(s);login(other,"other")
+    assert call(s,"/calendar/follow",{"method":"1a","enabled":True}).status_code==200
+    payload={"title":"TEST announcement","year":2026,"method":"1a","start":"2026-12-10T08:00:00+07:00","end":"2026-12-25T17:00:00+07:00","source_url":S1}
+    result=call(a,"/admin/calendar",payload);assert result.status_code==200,result.text
+    assert s.get("/product/calendar/notices").json()["items"][0]["kind"]=="change"
+    assert other.get("/product/calendar/notices").json()["items"][0]["kind"]=="announcement"
+    assert len(s.get("/product/calendar/proposals").json()["items"])==1
+    assert other.get("/product/calendar/proposals").json()["items"]==[]
+    assert a.get("/product/admin/overview").json()["students"]==2
+    assert other.get("/product/admin/overview").status_code==403
+    payload["id"]=result.json()["id"]
+    assert call(a,"/admin/calendar",payload).status_code==200
+    assert len(other.get("/product/calendar/notices").json()["items"])==1
+    payload["end"]="2026-12-30T17:00:00+07:00"
+    assert call(a,"/admin/calendar",payload).status_code==200
+    assert len(other.get("/product/calendar/notices").json()["items"])==2
+    uid=s.get("/product/auth/me").json()["user"]["id"]
+    assert other.get("/product/calendar/checklist?year=0&account_id="+str(uid)).status_code==409
