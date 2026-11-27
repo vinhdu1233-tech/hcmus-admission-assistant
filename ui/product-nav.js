@@ -16,7 +16,7 @@
     if(form){
       const notice=document.createElement('p');
       notice.style.cssText='font-size:11px;color:#64748b;margin:4px 0';
-      notice.textContent='Đang đăng nhập: câu hỏi có thể được Admin xem để hỗ trợ vận hành (lưu tối đa 30 ngày). Không nhập mật khẩu, OTP hay thông tin cá nhân nhạy cảm.';
+      notice.textContent='Lịch sử chat được lưu theo tài khoản. Nhật ký câu hỏi có thể được Admin xem tối đa 30 ngày. Không nhập mật khẩu, OTP hoặc thông tin nhạy cảm.';
       form.before(notice);
     }
   }

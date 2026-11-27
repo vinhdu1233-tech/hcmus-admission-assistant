@@ -152,6 +152,7 @@ async function askServer(question) {
   try{
     const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:controller.signal});
     const data=await response.json().catch(()=>null);
+    if(response.status===401){location.href='/portal.html#account';throw Error('Phiên đăng nhập đã hết hạn.');}
     if(!data || typeof data.answer!=='string')throw new Error('Server chưa trả JSON theo API Contract.');
     if(!response.ok)throw new Error(data?.error?.message || data.answer || 'Không thể xử lý câu hỏi.');
     if(!Array.isArray(data.sources) || typeof data.status!=='string')throw new Error('Response thiếu status hoặc sources.');
@@ -255,13 +256,13 @@ let plannerState={done:[],extra:[]};
 function selectedMethod(){return (ADMISSION_METHODS[planner.year.value]||[]).find(m=>m.id===planner.method.value)||null;}
 function selectedPath(){return selectedMethod()?.paths?.find(p=>p.id===planner.path.value)||null;}
 function plannerKey(){return planner.year.value+':'+planner.method.value+':'+planner.path.value;}
-let planOwner=null,planReady=false,planVersion=0,syncChain=Promise.resolve(),planFailed=false;
+let planOwner=null,planReady=false,planVersion=0,syncChain=Promise.resolve(),planFailed=false,pendingSaves=0;
 async function accountNow(){const r=await fetch('/api/product/auth/me',{cache:'no-store'});if(!r.ok)throw Error('Không kết nối được tài khoản');return (await r.json()).user;}
 function savePlanner(){
  if(!planReady||!planOwner||!selectedMethod())return;
  const uid=planOwner,key=plannerKey(),payload=planPayload();
- planner.saved.textContent='ĐANG LƯU…';planFailed=false;
- syncChain=syncChain.catch(()=>{}).then(()=>sendPlan(payload,uid)).then(()=>{if(key===plannerKey())planner.saved.textContent='ĐÃ LƯU VÀO TÀI KHOẢN';}).catch(e=>{planFailed=true;planner.saved.textContent='CHƯA LƯU: '+e.message;});
+ planner.saved.textContent='ĐANG LƯU…';planFailed=false;pendingSaves++;
+ syncChain=syncChain.catch(()=>{}).then(()=>sendPlan(payload,uid)).then(()=>{if(key===plannerKey())planner.saved.textContent='ĐÃ LƯU VÀO TÀI KHOẢN';}).catch(e=>{planFailed=true;planner.saved.textContent='CHƯA LƯU: '+e.message;}).finally(()=>pendingSaves--);
 }
 function setOptions(select,items,preferred){
  select.replaceChildren();
@@ -283,11 +284,11 @@ async function loadPlanner(){
   planReady=true;planner.saved.textContent=p?'ĐÃ KHÔI PHỤC TỪ TÀI KHOẢN':'SẴN SÀNG LƯU TỰ ĐỘNG';renderPlanner();
  }catch(e){if(v===planVersion)planner.saved.textContent=e.message;}
 }
-function updateMethods(preferred){
+function updateMethods(preferred,pathPreferred){
  const methods=ADMISSION_METHODS[planner.year.value]||[];
  if(methods.length){planner.method.disabled=false;setOptions(planner.method,methods.map(m=>({value:m.id,label:m.label})),preferred);}
  else{planner.method.disabled=true;setOptions(planner.method,[{value:'',label:'Chưa có phương thức được xác minh'}],'');}
- updatePath();
+ updatePath(pathPreferred);
 }
 function updatePath(preferred){
  const method=selectedMethod();
@@ -395,5 +396,20 @@ linkPlan.onclick=async()=>{
  location.href='/portal.html?year='+encodeURIComponent(planner.year.value)+'&method='+encodeURIComponent(planner.method.value)+'#calendar';
  }catch(e){planner.saved.textContent=e.message;}finally{linkPlan.disabled=false;}
 };
-window.addEventListener('beforeunload',e=>{if(planFailed){e.preventDefault();e.returnValue='';}});
+window.addEventListener('beforeunload',e=>{if(planFailed||pendingSaves){e.preventDefault();e.returnValue='';}});
 updateMethods('2');
+(async()=>{
+ const v=planVersion;
+ try{
+  const u=await accountNow();if(!u)return;
+  const r=await fetch('/api/product/calendar/checklist?year=0',{cache:'no-store'});if(!r.ok)return;
+  const p=(await r.json()).items[0];
+  if(v!==planVersion||!p||!ADMISSION_METHODS[p.year])return;
+  if([...planner.year.options].some(o=>Number(o.value)===p.year)){planner.year.value=String(p.year);updateMethods(p.method,p.path);}
+ }catch{}
+})();
+document.addEventListener('visibilitychange',async()=>{
+ if(document.hidden)return;
+ try{const u=await accountNow();if((chatOwner&&chatOwner!==u?.id)||(planOwner&&planOwner!==u?.id))location.reload();}
+ catch{}
+});

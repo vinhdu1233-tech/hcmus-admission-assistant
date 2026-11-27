@@ -341,7 +341,7 @@ def save_checklist(body:ChecklistBody,request:Request):
 @router.get("/calendar/checklist")
 def get_checklist(request:Request,year:int=2026,method:str="all"):
     uid=require_user(request)["id"]
-    with db() as c:rows=c.execute("SELECT year,method,path,tasks,updated_at FROM checklist_progress WHERE user_id=? AND year=? AND (?='all' OR method=?) ORDER BY updated_at DESC",(uid,year,method,method)).fetchall()
+    with db() as c:rows=c.execute("SELECT year,method,path,tasks,updated_at FROM checklist_progress WHERE user_id=? AND (?=0 OR year=?) AND (?='all' OR method=?) ORDER BY updated_at DESC",(uid,year,year,method,method)).fetchall()
     return {"items":[{**dict(r),"tasks":json.loads(r["tasks"])} for r in rows]}
 @router.get("/admin/monitor/candidates")
 def candidates(request:Request,history:bool=False):

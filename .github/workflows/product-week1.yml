@@ -40,6 +40,7 @@ jobs:
         run: |
           node --check ui/server.mjs
           node --check ui/portal.js
+          node --check ui/app.js
           node --check ui/product-nav.js
           node --check ui/product-sw.js
           node --test tests/test_conversation_proxy.mjs tests/test_planner_methods.mjs tests/test_web_product.mjs tests/test_calendar_grouping.mjs
@@ -49,7 +50,7 @@ jobs:
           HCMUS_PRODUCT_DB_PATH: /tmp/week1-product.sqlite3
         run: |
           python -m src.database.db
-          python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 > /tmp/week1-api.log 2>&1 &
+          REQUIRE_ACCOUNT_CHAT=1 python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000 > /tmp/week1-api.log 2>&1 &
           PORT=5501 CHAT_MODE=api API_ORIGIN=http://127.0.0.1:8000 node ui/server.mjs > /tmp/week1-node.log 2>&1 &
           python -m scripts.product_browser_check
           python scripts/f1_slo_regression.py
