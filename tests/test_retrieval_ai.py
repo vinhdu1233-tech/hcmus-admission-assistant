@@ -186,7 +186,8 @@ def test_ollama_local_structured_output_without_network(monkeypatch):
         called.append(body)
         return FakeResponse()
 
-    monkeypatch.setattr(request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(request, "build_opener", lambda *args: type("MockOpener", (), {"open": staticmethod(fake_urlopen)})())
+    monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
     monkeypatch.setenv("AI_PROVIDER", "ollama")
     monkeypatch.setenv("OLLAMA_MODEL", "qwen3:4b")
     result = explain_with_ai("Em thích lập trình", candidates)
@@ -215,7 +216,8 @@ def test_ollama_unknown_major_falls_back(monkeypatch):
                 }]})
             }).encode("utf-8")
 
-    monkeypatch.setattr(request, "urlopen", lambda req, timeout: FakeResponse())
+    monkeypatch.setattr(request, "build_opener", lambda *args: type("MockOpener", (), {"open": staticmethod(lambda req, timeout: FakeResponse())})())
+    monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
     monkeypatch.setenv("AI_PROVIDER", "ollama")
     assert explain_with_ai("Em thích lập trình", candidates) is None
 
@@ -226,7 +228,8 @@ def test_ollama_unavailable_returns_retrieval_fallback(monkeypatch):
     def offline(req, timeout):
         raise error.URLError("offline")
 
-    monkeypatch.setattr(request, "urlopen", offline)
+    monkeypatch.setattr(request, "build_opener", lambda *args: type("MockOpener", (), {"open": staticmethod(offline)})())
+    monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
     monkeypatch.setenv("AI_PROVIDER", "ollama")
     candidates = retrieve_majors("Em thích lập trình năm 2026?", 2026, 5)
     assert explain_with_ai("Em thích lập trình", candidates) is None
