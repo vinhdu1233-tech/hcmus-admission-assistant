@@ -22,7 +22,12 @@ Enter your own password twice; do not use real student data in the development s
 Use two browser profiles (Admin and Student). As Student follow a method. As Admin create a future test event using the supported official source form and clearly label it TEST (not official information). As Student accept its initial proposal and set both start and end reminder offsets. As Admin change the dates. The public calendar changes; personal plan stays on the old revision. Choose Defer, then Accept, and verify dates and retained offsets. To verify Reject use another test update. Old personal dates are clearly marked. Use a test DB only.
 
 ## Optional AI
-The Docker local default is AI_PROVIDER=none (verified retrieval remains available; no paid API). For a supported remote provider, set DOCKER_AI_PROVIDER=gemini or openai and provide the corresponding key in .env. Recreate the service with up -d. The current Ollama client is local-host dependent; a host Ollama instance is not automatically reachable from a container. Do not assume the existing local Ollama setup works unchanged.
+The Docker local default is AI_PROVIDER=none (verified retrieval remains available; no paid API). For a supported remote provider, set DOCKER_AI_PROVIDER=gemini or openai and provide the corresponding key in .env. Recreate the service with up -d. For local Ollama inside Docker, use the optional compose.ollama.yml overlay. It shares guide's network namespace so the existing loopback-only client still works without code changes. Start and pull the model:
+
+    docker compose -f compose.product.yml -f compose.ollama.yml up -d --build --force-recreate
+    docker compose -f compose.product.yml -f compose.ollama.yml exec ollama ollama pull qwen3:4b
+
+Use both -f arguments when stopping or updating this optional stack. Model downloads require internet and several GB of storage. Docker Desktop on macOS typically uses CPU inference; native macOS Ollama may be faster. This optional model path is not part of the standard CI smoke test. A host Ollama instance is not automatically reachable from a container.
 
 ## Stop, restart, update
     docker compose -f compose.product.yml stop
