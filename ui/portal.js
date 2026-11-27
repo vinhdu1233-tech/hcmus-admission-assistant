@@ -49,7 +49,7 @@ async function showPage(){
 window.addEventListener('hashchange',()=>safe(showPage));
 $('login-form').addEventListener('submit',event=>{event.preventDefault();safe(async()=>{
   const d=fields(event.target);await api('/auth/login',{method:'POST',body:d});event.target.reset();await refreshUser();
-  location.hash=user.role==='admin'?'dashboard':'calendar';flash('Đăng nhập thành công.');await showPage();
+  location.href='/';
 });});
 $('register-form').addEventListener('submit',event=>{event.preventDefault();safe(async()=>{
   await api('/auth/register',{method:'POST',body:fields(event.target)});event.target.reset();showAuthTab('login');flash('Đăng ký thành công. Hãy đăng nhập.');
@@ -68,6 +68,7 @@ document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.c
 const currentYear=Number(selected.slice(0,4));
 for(let y=2025;y<=Math.max(currentYear+2,2028);y++){$('year').append(new Option(String(y),String(y)));}
 $('year').value=String(currentYear);
+const initialFilters=new URLSearchParams(location.search);if([...$('year').options].some(o=>o.value===initialFilters.get('year')))$('year').value=initialFilters.get('year');if(['1a','1b','2','all'].includes(initialFilters.get('method')))$('method').value=initialFilters.get('method');
 function keyDate(d){return d.toISOString().slice(0,10);}
 function eventClass(e){return e.variants?'shared':e.user_id!==null?'personal':'m'+e.method;}
 function visibleEvents(){const q=$('calendar-search').value.trim().toLocaleLowerCase('vi');return groupCalendarEvents(calendarData.events.filter(e=>($('personal-visible').checked||e.user_id===null)&&(!q||(e.title+' '+e.note).toLocaleLowerCase('vi').includes(q))));}
