@@ -38,6 +38,8 @@ def event_access(c,ident,uid):
     e=c.execute("SELECT * FROM events WHERE id=? AND (user_id IS NULL OR user_id=?)",(ident,uid)).fetchone()
     if not e:error(404,"Không tìm thấy sự kiện.")
     return e
+def cancel_event_pending(c,event):
+    c.execute("UPDATE deliveries SET state='cancelled' WHERE state='pending' AND notice_id IN (SELECT id FROM notices WHERE event_id=? AND kind='reminder')",(event,))
 def notice(c,uid,event,kind,key,title):
     now=time.time()
     c.execute("INSERT OR IGNORE INTO notices(user_id,event_id,kind,dedupe_key,title,created_at) VALUES (?,?,?,?,?,?)",(uid,event,kind,key,title,now))
@@ -99,6 +101,7 @@ def edit_personal(ident:str,body:EventBody,request:Request):
     with db(True) as c:
         n=c.execute("UPDATE events SET title=?,starts=?,ends=?,note=?,revision=revision+1 WHERE id=? AND user_id=?",(body.title.strip(),start,end,body.note,ident,user["id"])).rowcount
         if not n:error(404,"Không tìm thấy sự kiện cá nhân.")
+        cancel_event_pending(c,ident)
     return {"ok":True}
 @router.delete("/calendar/personal/{ident}")
 def delete_personal(ident:str,request:Request):
@@ -109,12 +112,13 @@ def delete_personal(ident:str,request:Request):
 @router.post("/admin/calendar")
 def upsert_official(body:OfficialEvent,request:Request):
     require_admin(request)
-    if body.source_url not in SOURCES:error(400,"Chọn nguồn HCMUS trong danh sách theo dõi.")
+    if not source_allowed(body.source_url):error(400,"Chọn URL chính thức HCMUS.")
     start,end=bounds(body.start,body.end)
     if not body.title.strip():error(400,"Tên sự kiện không được trống.")
     if datetime.fromtimestamp(start,timezone.utc).year not in (body.year-1,body.year,body.year+1):
         error(400,"Năm sự kiện không phù hợp.")
     with db(True) as c:
+        if not c.execute("SELECT 1 FROM monitor_sources WHERE url=?",(body.source_url,)).fetchone():error(400,"Chọn nguồn trong danh sách theo dõi.")
         if body.id:
             old=c.execute("SELECT * FROM events WHERE id=? AND user_id IS NULL",(body.id,)).fetchone()
             if not old:error(404,"Không tìm thấy sự kiện chính thức.")
@@ -123,6 +127,7 @@ def upsert_official(body:OfficialEvent,request:Request):
             c.execute("UPDATE events SET title=?,starts=?,ends=?,year=?,method=?,source_url=?,note=?,revision=revision+? WHERE id=?",
               (body.title,start,end,body.year,body.method,body.source_url,body.note,int(changed),ident))
             if changed:
+                cancel_event_pending(c,ident)
                 revision=old["revision"]+1
                 ids=c.execute("SELECT user_id FROM method_follows WHERE method IN (?,?) UNION SELECT user_id FROM reminders WHERE event_id=?",(old["method"],body.method,ident)).fetchall()
                 for r in ids:notice(c,r[0],ident,"change",f"change:{ident}:{revision}:{r[0]}","Lịch tuyển sinh đã cập nhật: "+body.title)
@@ -203,6 +208,23 @@ def notices(request:Request):
     user=require_user(request)
     with db() as c:rows=c.execute("SELECT id,kind,title,created_at FROM notices WHERE user_id=? ORDER BY id DESC LIMIT 50",(user["id"],)).fetchall()
     return {"items":[dict(r) for r in rows]}
+def source_allowed(url):
+    try:
+        p=urlsplit(url)
+        return p.scheme=="https" and p.hostname=="tuyensinh.hcmus.edu.vn" and p.port in (None,443) and not p.username and not p.password and not p.query and not p.fragment and p.path.startswith("/") and len(p.path)>1
+    except ValueError:return False
+class MonitorSource(BaseModel):
+    url:StrictStr=Field(max_length=500)
+    label:StrictStr=Field(min_length=1,max_length=160)
+@router.post("/admin/monitor/sources")
+def add_monitor_source(body:MonitorSource,request:Request):
+    require_admin(request)
+    if not source_allowed(body.url):error(400,"Chỉ chấp nhận HTTPS trên cổng tuyển sinh HCMUS.")
+    with db(True) as c:
+        if c.execute("SELECT COUNT(*) FROM monitor_sources").fetchone()[0]>=30 and not c.execute("SELECT 1 FROM monitor_sources WHERE url=?",(body.url,)).fetchone():
+            error(400,"Đã đạt giới hạn nguồn theo dõi của prototype.")
+        c.execute("INSERT OR IGNORE INTO monitor_sources(url,label) VALUES (?,?)",(body.url,body.label.strip()))
+    return {"ok":True}
 @router.get("/monitor")
 def monitor():
     with db() as c:

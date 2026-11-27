@@ -217,5 +217,6 @@ async function loadAdminChanges(){
   }
 }
 async function loadAdmin(){if(user?.role!=='admin')return;await Promise.all([loadQuestions(),loadUsers(),loadOfficialEvents(),loadAdminChanges()]);}
+$('source-form').onsubmit=e=>{e.preventDefault();safe(async()=>{await api('/admin/monitor/sources',{method:'POST',body:fields(e.target)});e.target.reset();await loadAdminChanges();flash('Đã thêm nguồn. Worker sẽ kiểm tra ở lượt tiếp theo.');});};
 $('refresh-admin').onclick=()=>safe(loadAdmin);
 safe(async()=>{await refreshUser();await showPage();});

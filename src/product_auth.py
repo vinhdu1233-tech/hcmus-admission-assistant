@@ -26,7 +26,7 @@ def username_value(s):
         error(400,"Username: 3–32 ký tự chữ, số, dấu chấm, gạch ngang hoặc gạch dưới.")
     return s
 def password_value(s):
-    if len(s)<7 or len(s.encode("utf-8"))>72 or not re.search(r"[A-Z]",s) or not re.search(r"[0-9]",s) or not re.search(r"[^\w\s]",s) or any(x.isspace() for x in s):
+    if len(s)<7 or len(s.encode("utf-8"))>72 or not re.search(r"[A-Z]",s) or not re.search(r"[0-9]",s) or not any(not ch.isalnum() and not ch.isspace() and ch.isprintable() for ch in s) or any(x.isspace() or not x.isprintable() for x in s):
         error(400,"Mật khẩu ít nhất 7 ký tự, có chữ in hoa, số, ký tự đặc biệt; không có khoảng trắng, tối đa 72 byte.")
     return s
 def password_hash(s):return bcrypt.hashpw(password_value(s).encode(),bcrypt.gensalt(rounds=12)).decode()

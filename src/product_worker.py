@@ -5,7 +5,7 @@ import httpx
 from bs4 import BeautifulSoup
 from src.product_db import db
 from src.product_seed import SOURCES
-from src.product import notice,push_endpoint_allowed,push_config
+from src.product import notice,push_endpoint_allowed,push_config,source_allowed
 log=logging.getLogger("hcmus.worker")
 def normalized_page(raw):
     soup=BeautifulSoup(raw,"html.parser")
@@ -19,7 +19,9 @@ def normalized_page(raw):
     if len(text)<80:raise ValueError("Source content unexpectedly short")
     return text[:250000]
 def fetch_source(url):
-    if url not in SOURCES:raise ValueError("Not allowlisted")
+    if not source_allowed(url):raise ValueError("Not allowlisted")
+    with db() as c:
+        if not c.execute("SELECT 1 FROM monitor_sources WHERE url=?",(url,)).fetchone():raise ValueError("Not registered")
     with httpx.Client(timeout=15,follow_redirects=False,headers={"User-Agent":"HCMUSGuideStudentProject/1.0 (periodic public admissions monitoring)"}) as client:
         with client.stream("GET",url) as response:
             response.raise_for_status()
@@ -74,6 +76,9 @@ def send_pending():
     for row in rows:
         state="pending";sent=None;next_attempt=time.time()+min(3600,60*2**row["attempts"])
         try:
+            with db() as c:
+                fresh=c.execute("SELECT d.state,s.enabled,n.user_id=s.user_id AS owner_ok FROM deliveries d JOIN push_subscriptions s ON s.id=d.subscription_id JOIN notices n ON n.id=d.notice_id WHERE d.notice_id=? AND d.subscription_id=?",(row["notice_id"],row["subscription_id"])).fetchone()
+            if not fresh or fresh["state"]!="pending" or not fresh["enabled"] or not fresh["owner_ok"]:continue
             if time.time()-row["created_at"]>86400 or not push_endpoint_allowed(row["endpoint"]):
                 state="expired"
             else:
@@ -88,12 +93,19 @@ def send_pending():
             if row["attempts"]>=4:state="failed"
             log.warning("push delivery failed (%s)",type(e).__name__)
         with db(True) as c:c.execute("UPDATE deliveries SET state=?,sent_at=?,attempts=attempts+1,next_attempt=? WHERE notice_id=? AND subscription_id=?",(state,sent,next_attempt,row["notice_id"],row["subscription_id"]))
+def cleanup():
+    with db(True) as c:
+        now=time.time()
+        c.execute("DELETE FROM question_logs WHERE created_at<?",(now-30*86400,))
+        c.execute("DELETE FROM sessions WHERE expires<=?",(now,))
+        c.execute("DELETE FROM otps WHERE expires<=?",(now,))
+        c.execute("DELETE FROM otp_sends WHERE sent_at<?",(now-3600,))
 def main():
     parser=argparse.ArgumentParser();parser.add_argument("--once",action="store_true");parser.add_argument("--skip-monitor",action="store_true");a=parser.parse_args()
     logging.basicConfig(level=logging.INFO)
     while True:
         try:
-            queue_reminders();send_pending()
+            cleanup();queue_reminders();send_pending()
             if not a.skip_monitor:poll_sources()
         except Exception:log.exception("worker cycle failed")
         if a.once:return

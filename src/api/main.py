@@ -35,7 +35,9 @@ def public_error(code:str,detail:str,answer:str)->dict:
             'error':{'code':code,'message':detail}}
 
 @app.exception_handler(RequestValidationError)
-async def invalid_schema(_:Request,__:RequestValidationError):
+async def invalid_schema(req:Request,__:RequestValidationError):
+    if req.url.path.startswith('/product/'):
+        return JSONResponse(status_code=422,content={'detail':'Dữ liệu gửi lên không đúng định dạng.'})
     return JSONResponse(status_code=422,content=public_error('INVALID_SCHEMA',
        'message phải là chuỗi; admission_year phải là số nguyên từ 2000 đến 2100 hoặc null.',
        'Dữ liệu gửi lên không đúng định dạng.'))

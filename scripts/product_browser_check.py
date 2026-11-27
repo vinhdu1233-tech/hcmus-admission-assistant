@@ -1,0 +1,96 @@
+"""Real Chrome + Node proxy + FastAPI + SQLite + MailHog. Local CI only."""
+from __future__ import annotations
+import time,json,re
+from pathlib import Path
+from datetime import datetime,timezone,timedelta
+import httpx
+from playwright.sync_api import sync_playwright,expect
+from src.product_auth import create_admin
+BASE="http://127.0.0.1:5501"
+OUT=Path("product-browser-evidence");OUT.mkdir(exist_ok=True)
+def wait_services():
+    for i in range(60):
+        try:
+            assert httpx.get(BASE+"/api/config",timeout=1).json()["mode"]=="api"
+            assert httpx.get("http://127.0.0.1:8000/health",timeout=1).status_code==200
+            return
+        except Exception:time.sleep(.3)
+    raise RuntimeError("Services not ready")
+def otp_for(address):
+    for _ in range(30):
+        for x in httpx.get("http://127.0.0.1:8025/api/v2/messages").json()["items"]:
+            if address in str(x["Content"]["Headers"].get("To",[])):
+                m=re.search(r"(?<!\d)\d{6}(?!\d)",x["Content"]["Body"])
+                if m:return m.group()
+        time.sleep(.3)
+    raise AssertionError("Missing OTP email")
+def main():
+    wait_services();create_admin("browser-admin@example.test","browseradmin","Browser7!")
+    result=[]
+    with sync_playwright() as p:
+        browser=p.chromium.launch(channel="chrome",headless=True,args=["--no-sandbox"])
+        student=browser.new_context(viewport={"width":1440,"height":950})
+        page=student.new_page()
+        page.goto(BASE+"/portal.html#account",wait_until="domcontentloaded")
+        expect(page.locator("#login-form")).to_be_visible()
+        page.locator('[data-auth-tab="register"]').click()
+        form=page.locator("#register-form")
+        for name,val in {"email":"browser-student@example.test","username":"browserstudent","password":"Browser7!"}.items():form.locator(f'[name="{name}"]').fill(val)
+        form.locator('[data-send-code="register"]').click()
+        expect(page.locator("#message")).to_contain_text("mã")
+        form.locator('[name="code"]').fill(otp_for("browser-student@example.test"))
+        form.locator('button[type=submit]').click()
+        expect(page.locator("#login-form")).to_be_visible()
+        result.append("registration_email_otp")
+        login=page.locator("#login-form")
+        login.locator('[name=identifier]').fill("browserstudent");login.locator('[name=password]').fill("Browser7!");login.locator('button[type=submit]').click()
+        expect(page.locator("#calendar")).to_be_visible()
+        expect(page.locator("#nav-dashboard")).to_be_hidden()
+        expect(page.locator("#month-grid .day")).to_have_count(42)
+        result.append("student_login_calendar")
+        page.locator("#year").select_option("2026");page.locator("#method").select_option("1a")
+        expect(page.locator("#year-events")).to_contain_text("phương thức 1a")
+        page.locator("#year-events .event-row").first.click()
+        expect(page.locator("#event-detail")).to_contain_text("Mở thông báo chính thức")
+        page.locator('[data-close="detail-dialog"]').click()
+        result.append("official_calendar_filter")
+        page.locator("#new-event").click()
+        form=page.locator("#personal-form")
+        future=datetime.now(timezone(timedelta(hours=7)))+timedelta(days=12)
+        form.locator('[name=title]').fill("Personal browser reminder")
+        form.locator('[name=start]').fill(future.strftime("%Y-%m-%dT%H:%M"))
+        form.locator('[name=end]').fill((future+timedelta(days=2)).strftime("%Y-%m-%dT%H:%M"))
+        form.locator('button[type=submit]').click()
+        expect(page.locator("#event-dialog")).to_be_hidden()
+        events=student.request.get(BASE+"/api/product/calendar?year=2026&method=all").json()["events"]
+        e=next(x for x in events if x["title"]=="Personal browser reminder")
+        r=student.request.post(BASE+"/api/product/calendar/reminders",data={"event_id":e["id"],"before_start":[7,4],"before_end":[7,4]})
+        assert r.ok,r.text()
+        result.append("personal_event_and_start_end_reminders")
+        assert student.request.get(BASE+"/api/product/admin/questions").status==403
+        result.append("student_admin_api_denied")
+        page.screenshot(path=str(OUT/"calendar.png"),full_page=True)
+        page.goto(BASE+"/",wait_until="domcontentloaded")
+        expect(page.locator(".desktop-nav")).to_contain_text("Tài khoản")
+        page.locator("#floating-chat").click();page.locator("#question").fill("Ngành nào xét A01 năm 2026?")
+        with page.expect_response(lambda r:r.url.endswith("/api/chat"),timeout=20000) as rr:page.locator("#send-button").click()
+        assert rr.value.status==200
+        result.append("logged_in_chat")
+        admin=browser.new_context(viewport={"width":1440,"height":950})
+        ap=admin.new_page();ap.goto(BASE+"/portal.html#account",wait_until="domcontentloaded")
+        af=ap.locator("#login-form");expect(af).to_be_visible()
+        af.locator('[name=identifier]').fill("browseradmin");af.locator('[name=password]').fill("Browser7!");af.locator('button[type=submit]').click()
+        expect(ap.locator("#dashboard")).to_be_visible()
+        expect(ap.locator("#questions")).to_contain_text("browserstudent")
+        expect(ap.locator("#questions")).to_contain_text("A01")
+        ap.locator("#questions button").first.click();expect(ap.locator("#question-detail")).to_contain_text("A01")
+        ap.locator('[data-close="question-dialog"]').click()
+        result.append("admin_dashboard_question_detail")
+        ap.screenshot(path=str(OUT/"dashboard.png"),full_page=True)
+        ap.goto(BASE+"/",wait_until="domcontentloaded")
+        expect(ap.locator(".desktop-nav")).to_contain_text("Dashboard")
+        result.append("role_based_main_navigation")
+        student.close();admin.close();browser.close()
+    (OUT/"results.json").write_text(json.dumps({"passed":result,"total":len(result)},indent=2))
+    print("BROWSER_PRODUCT_RESULTS",json.dumps(result))
+if __name__=="__main__":main()
