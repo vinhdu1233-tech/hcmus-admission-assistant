@@ -102,6 +102,30 @@ CREATE TABLE IF NOT EXISTS checklist_progress (
  tasks TEXT NOT NULL, updated_at REAL NOT NULL,
  PRIMARY KEY(user_id,year,method,path)
 );
+
+CREATE TABLE IF NOT EXISTS personal_event_plans (
+ user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+ title TEXT NOT NULL, starts REAL NOT NULL, ends REAL NOT NULL,
+ year INTEGER NOT NULL, method TEXT NOT NULL, revision INTEGER NOT NULL,
+ updated_at REAL NOT NULL, PRIMARY KEY(user_id,event_id)
+);
+CREATE TABLE IF NOT EXISTS calendar_update_proposals (
+ id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+ revision INTEGER NOT NULL, title TEXT NOT NULL, source_url TEXT NOT NULL,
+ old_starts REAL, old_ends REAL, old_revision INTEGER,
+ new_starts REAL NOT NULL, new_ends REAL NOT NULL, year INTEGER NOT NULL, method TEXT NOT NULL,
+ state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','deferred','accepted','rejected','superseded')),
+ created_at REAL NOT NULL, decided_at REAL,
+ UNIQUE(user_id,event_id,revision)
+);
+CREATE INDEX IF NOT EXISTS proposals_user ON calendar_update_proposals(user_id,state,id);
+CREATE TABLE IF NOT EXISTS proposal_decisions (
+ id INTEGER PRIMARY KEY, proposal_id INTEGER NOT NULL REFERENCES calendar_update_proposals(id) ON DELETE CASCADE,
+ decision TEXT NOT NULL CHECK(decision IN ('accepted','rejected','deferred','superseded')),
+ created_at REAL NOT NULL
+);
 """
 _guard=threading.Lock()
 _initialized=set()

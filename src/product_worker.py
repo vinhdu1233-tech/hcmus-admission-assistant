@@ -68,13 +68,20 @@ def poll_sources():
 def queue_reminders(now=None):
     now=time.time() if now is None else now
     with db(True) as c:
-        rows=c.execute("""SELECT r.*,e.title,e.starts,e.ends,e.revision,e.year,e.method FROM reminders r JOIN events e ON e.id=r.event_id
-          WHERE (CASE r.edge WHEN 'start' THEN e.starts ELSE e.ends END)-r.days_before*86400 <= ?
-          AND (CASE r.edge WHEN 'start' THEN e.starts ELSE e.ends END)-r.days_before*86400 >= r.created_at
-          AND (CASE r.edge WHEN 'start' THEN e.starts ELSE e.ends END)-r.days_before*86400 >= ?""",(now,now-86400)).fetchall()
+        rows=c.execute("""WITH schedules AS (
+          SELECT r.*,COALESCE(p.title,e.title) AS title,COALESCE(p.starts,e.starts) AS starts,
+          COALESCE(p.ends,e.ends) AS ends,COALESCE(p.revision,e.revision) AS revision,
+          COALESCE(p.year,e.year) AS year,COALESCE(p.method,e.method) AS method,e.revision AS official_revision
+          FROM reminders r JOIN events e ON e.id=r.event_id
+          LEFT JOIN personal_event_plans p ON p.user_id=r.user_id AND p.event_id=r.event_id
+        ) SELECT * FROM schedules
+          WHERE (CASE edge WHEN 'start' THEN starts ELSE ends END)-days_before*86400 <= ?
+          AND (CASE edge WHEN 'start' THEN starts ELSE ends END)-days_before*86400 >= created_at
+          AND (CASE edge WHEN 'start' THEN starts ELSE ends END)-days_before*86400 >= ?""",(now,now-86400)).fetchall()
         for r in rows:
             edge="bắt đầu" if r["edge"]=="start" else "kết thúc"
             title=f"{r['title']} — "+(f"còn {r['days_before']} ngày đến mốc {edge}" if r["days_before"] else f"đến mốc {edge}")
+            if r["revision"]!=r["official_revision"]:title="Lịch cá nhân cũ (không phải hạn chính thức mới): "+title
             if r["year"] and r["method"]:
                 plan=c.execute("SELECT tasks FROM checklist_progress WHERE user_id=? AND year=? AND method=? ORDER BY updated_at DESC LIMIT 1",(r["user_id"],r["year"],r["method"])).fetchone()
                 if plan:
