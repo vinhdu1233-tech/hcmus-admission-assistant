@@ -70,6 +70,7 @@ function conversationSession(req) {
 }
 
 async function handleChat(req, res) {
+  if(!sameOrigin(req)) return json(res,403,safeError('CROSS_ORIGIN','Cross-origin request blocked.'));
   let body;
   try {body=await readBody(req);} catch(err) {
     return json(res,400,safeError('INVALID_JSON',err.message==='BODY_TOO_LARGE'?'Dữ liệu gửi lên quá lớn.':'JSON không hợp lệ.'));
@@ -102,6 +103,7 @@ async function handleChat(req, res) {
 // Explicitly reset the context for the current browser only.
 // The same HttpOnly session ID is forwarded to FastAPI's existing reset action.
 async function handleConversationReset(req,res) {
+  if(!sameOrigin(req)) return json(res,403,{ok:false,message:'Cross-origin request blocked.'});
   const session=conversationSession(req);
   if (MODE === 'demo') return json(res,200,{ok:true},session.headers);
   try {

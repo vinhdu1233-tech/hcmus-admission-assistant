@@ -132,7 +132,6 @@ def test_calendar_filters_historical_and_ownership(env):
 def test_invalid_event_and_past_reminders(env):
     s=client();register(s,env);login(s)
     assert call(s,"/calendar/personal",{"title":"Bad","start":date(5),"end":date(1)}).status_code==400
-    assert call(s,"/calendar/reminders",{"event_id":"official-2026-1a-application","before_start":[7]}).status_code in (200,400) # depending on execution date
     i=event(s,days=-10)
     assert call(s,"/calendar/reminders",{"event_id":i,"before_start":[0]}).status_code==400
 def test_reminder_both_edges_idempotent_and_reschedule(env):

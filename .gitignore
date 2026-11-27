@@ -13,3 +13,5 @@ __pycache__/
 data/raw/
 node_modules/
 *.log
+*.pem
+product-browser-evidence/

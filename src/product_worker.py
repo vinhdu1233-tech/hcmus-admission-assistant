@@ -40,7 +40,7 @@ def save_snapshot(url,content,now=None):
             ident=c.execute("INSERT INTO snapshots(url,digest,content,fetched_at) VALUES (?,?,?,?)",(url,digest,content,now)).lastrowid
             if last:
                 delta=list(difflib.unified_diff(last["content"].split(),content.split(),n=2))
-                summary=" ".join(delta[:120])[:1200] or "Source content changed."
+                summary="\n".join(delta[:120])[:1200] or "Source content changed."
                 c.execute("INSERT INTO changes(url,previous_id,current_id,summary,detected_at) VALUES (?,?,?,?,?)",(url,last["id"],ident,summary,now))
         c.execute("UPDATE monitor_sources SET checked_at=?,successful_at=?,last_digest=?,last_error=NULL WHERE url=?",(now,now,digest,url))
 def poll_sources():

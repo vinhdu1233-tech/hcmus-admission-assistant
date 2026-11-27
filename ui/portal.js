@@ -1,5 +1,6 @@
 const $=id=>document.getElementById(id);
 const apiBase='/api/product';
+let pushConfig=null,pushRegistration=null;
 let user=null,calendarData={events:[],reminders:[],follows:[]},monitorData={sources:[],changes:[]},adminEvents=[],questionOffset=0;
 const tz='Asia/Ho_Chi_Minh', todayKey=()=>new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).replace(/\//g,'-');
 const dateKey=seconds=>{
@@ -60,7 +61,7 @@ document.querySelectorAll('[data-send-code]').forEach(b=>b.addEventListener('cli
   b.disabled=true;try{const d=await api('/auth/'+b.dataset.sendCode+'/code',{method:'POST',body:{email:email.value}});flash(d.message||'Đã gửi mã.');setTimeout(()=>b.disabled=false,60000);}
   catch(e){b.disabled=false;throw e;}
 })));
-$('logout').onclick=()=>safe(async()=>{await api('/auth/logout',{method:'POST',body:{}});await refreshUser();showAuthTab('login');flash('Đã đăng xuất. Lịch riêng không còn hiển thị.');});
+$('logout').onclick=()=>safe(async()=>{const reg=await navigator.serviceWorker?.getRegistration('/'),sub=await reg?.pushManager?.getSubscription();if(sub){await api('/push/unsubscribe',{method:'POST',body:{endpoint:sub.endpoint}});await sub.unsubscribe();}await api('/auth/logout',{method:'POST',body:{}});await refreshUser();showAuthTab('login');flash('Đã đăng xuất. Lịch riêng không còn hiển thị.');});
 $('change-password').onclick=()=>{ $('auth-forms').hidden=false;showAuthTab('reset');fill($('reset-form'),'email',user.email);};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).close());
 const currentYear=Number(selected.slice(0,4));
@@ -148,18 +149,17 @@ async function refreshPush(){
   const supported='serviceWorker'in navigator&&'PushManager'in window&&'Notification'in window&&window.isSecureContext;
   $('enable-push').disabled=!user||!supported;$('disable-push').disabled=!user||!supported;
   if(!supported){$('push-status').textContent='Thiết bị/trình duyệt chưa hỗ trợ Web Push hoặc trang chưa dùng HTTPS.';return;}
-  const config=await api('/push/config');
+  const config=pushConfig=await api('/push/config');
   if(!config.enabled){$('enable-push').disabled=true;$('push-status').textContent='Server chưa được cấu hình VAPID.';return;}
-  const reg=await navigator.serviceWorker.getRegistration('/');
+  const reg=pushRegistration=await navigator.serviceWorker.register('/product-sw.js',{scope:'/'});
   const sub=await reg?.pushManager.getSubscription();
   $('push-status').textContent=Notification.permission==='denied'?'Bạn đã chặn thông báo. Thay đổi trong cài đặt thiết bị.':sub?'Thiết bị có subscription. Nhấn Bật để liên kết với tài khoản hiện tại.':'Chưa bật trên thiết bị này.';
 }
 $('enable-push').onclick=()=>safe(async()=>{
   if(!requireLogin())return;
-  const config=await api('/push/config');if(!config.enabled)throw Error('Server chưa cấu hình VAPID.');
+  const config=pushConfig;if(!config?.enabled||!pushRegistration)throw Error('Server chưa cấu hình VAPID hoặc đang chuẩn bị Service Worker.');
   const permission=await Notification.requestPermission();if(permission!=='granted')throw Error('Bạn chưa cấp quyền nhận thông báo.');
-  const reg=await navigator.serviceWorker.register('/product-sw.js',{scope:'/'});
-  await navigator.serviceWorker.ready;
+  const reg=await navigator.serviceWorker.ready;
   let sub=await reg.pushManager.getSubscription();
   if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeVapid(config.public_key)});
   await api('/push/subscribe',{method:'POST',body:sub.toJSON()});flash('Đã liên kết thiết bị nhận Web Push.');await refreshPush();
@@ -175,7 +175,7 @@ async function refreshNotices(){const b=$('notices');b.replaceChildren();if(!use
 function sourceLink(url,label){const a=el('a',label||'Nguồn chính thức');a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;}
 async function refreshMonitor(){monitorData=await api('/monitor');const status=$('monitor-status'),changes=$('change-list');status.replaceChildren();changes.replaceChildren();
   for(const s of monitorData.sources){const row=el('div',undefined,'entry');row.append(sourceLink(s.url,s.label),el('p',s.last_error?'Kiểm tra thất bại: '+s.last_error:s.successful_at?'Kiểm tra: '+timeText(s.successful_at):'Chưa kiểm tra lần đầu.','hint'));status.append(row);}
-  for(const c of monitorData.changes){const row=el('div',undefined,'entry');row.append(el('strong',c.reviewed_at?'Đã kiểm duyệt':'Phát hiện thay đổi — đang chờ xác minh'),el('p',timeText(c.detected_at),'hint'),sourceLink(c.url));changes.append(row);}
+  for(const c of monitorData.changes){const row=el('div',undefined,'entry');row.append(el('strong',c.reviewed_at?'Đã kiểm duyệt':'Phát hiện thay đổi — đang chờ xác minh'),el('p',timeText(c.detected_at),'hint'),sourceLink(c.url));const details=el('details');details.append(el('summary','Xem phần nội dung thay đổi'),el('pre',c.summary));row.append(details);if(c.reviewed_at&&c.review_note)row.append(el('p',c.review_note,'hint'));changes.append(row);}
 }
 function dateStart(value){return value?value+'T00:00:00+07:00':null;}
 function dateEnd(value){if(!value)return null;const d=new Date(value+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+1);return keyDate(d)+'T00:00:00+07:00';}
